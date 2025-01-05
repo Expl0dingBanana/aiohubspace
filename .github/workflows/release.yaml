@@ -1,4 +1,4 @@
-name: Execute tests and linting
+name: Publish
 
 on:
   workflow_dispatch:
