@@ -25,9 +25,19 @@ jobs:
           pip install .[test]
       - name: Execute Tests
         run: |
-          python -m pytest
+          python -m pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
       - name: Execute linting
         if: matrix.python-version == '3.12'
         run: |
           pip install pre-commit
           pre-commit run --all-files
+      - name: Upload coverage reports to Codecov
+        if: matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }} && matrix.python-version == '3.13'
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
