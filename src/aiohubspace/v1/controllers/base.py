@@ -76,7 +76,7 @@ class BaseResourcesController(Generic[HubspaceResource]):
             self._bridge.add_device(evt_data["device"].id)
         elif evt_type == EventType.RESOURCE_DELETED:
             cur_item = self._items.pop(item_id, evt_data)
-            self._bridge.remove_device(evt_data["device"].id)
+            self._bridge.remove_device(evt_data["device_id"])
         elif evt_type == EventType.RESOURCE_UPDATED:
             # existing item updated
             try:
