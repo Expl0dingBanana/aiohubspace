@@ -2,6 +2,20 @@
 Changelog
 =========
 
+Version 0.6.4
+=============
+
+ * Fix an issue where locks were not being managed by LockController
+ * Fix an issue with Fans not correctly setting presets
+ * Less greedy updates - Only forward updates if something has changed
+   on the resource
+ * Create additional unit tests to ensure functionality
+
+Version 0.6.3
+=============
+
+ * Fix an issue with Binary sensors to ensure the state is obvious
+
 Version 0.6.2
 =============
 
