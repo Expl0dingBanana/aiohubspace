@@ -87,7 +87,9 @@ class HubspaceDevice:
         # Fix valves
         elif self.device_class == "valve":
             pass
-
+        # Fix glass doors - Treat as a switch
+        elif self.device_class == "glass-door":
+            self.device_class = "switch"
 
 def get_hs_device(hs_device: dict[str, Any]) -> HubspaceDevice:
     """Convert the Hubspace device definition into a HubspaceDevice"""

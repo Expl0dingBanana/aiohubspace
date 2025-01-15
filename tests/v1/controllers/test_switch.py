@@ -12,6 +12,7 @@ from .. import utils
 
 switch = utils.create_devices_from_data("switch-HPDA311CWB.json")[0]
 transformer = utils.create_devices_from_data("transformer.json")[0]
+glass_door = utils.create_devices_from_data("glass-door.json")[0]
 
 
 @pytest.fixture
@@ -51,6 +52,15 @@ async def test_initialize_multi(mocked_controller):
         ),
     }
 
+@pytest.mark.asyncio
+async def test_initialize_glass_door(mocked_controller):
+    await mocked_controller.initialize_elem(glass_door)
+    assert len(mocked_controller.items) == 1
+    dev = mocked_controller.items[0]
+    assert dev.id == "89d12e53-2c38-46b3-af2a-ced1ccc04c39"
+    assert dev.on == {
+        None: features.OnFeature(on=False, func_class="power", func_instance=None),
+    }
 
 @pytest.mark.asyncio
 async def test_turn_on(mocked_controller):
@@ -102,6 +112,26 @@ async def test_turn_on_multi(mocked_controller):
         ),
     }
 
+@pytest.mark.asyncio
+async def test_turn_on_glass_door(mocked_controller):
+    await mocked_controller.initialize_elem(glass_door)
+    dev = mocked_controller.items[0]
+    await mocked_controller.turn_on(glass_door.id)
+    req = utils.get_json_call(mocked_controller)
+    assert req["metadeviceId"] == glass_door.id
+    expected_states = [
+        {
+            "functionClass": "power",
+            "functionInstance": None,
+            "lastUpdateTime": 12345,
+            "value": "on",
+        }
+    ]
+    utils.ensure_states_sent(mocked_controller, expected_states)
+    assert dev.on == {
+        None: features.OnFeature(on=True, func_class="power", func_instance=None)
+    }
+
 
 @pytest.mark.asyncio
 async def test_turn_off(mocked_controller):
@@ -151,6 +181,26 @@ async def test_turn_off_multi(mocked_controller):
         "zone-3": features.OnFeature(
             on=False, func_class="toggle", func_instance="zone-3"
         ),
+    }
+
+@pytest.mark.asyncio
+async def test_turn_off_glass_door(mocked_controller):
+    await mocked_controller.initialize_elem(glass_door)
+    dev = mocked_controller.items[0]
+    await mocked_controller.turn_off(glass_door.id)
+    req = utils.get_json_call(mocked_controller)
+    assert req["metadeviceId"] == glass_door.id
+    expected_states = [
+        {
+            "functionClass": "power",
+            "functionInstance": None,
+            "lastUpdateTime": 12345,
+            "value": "off",
+        }
+    ]
+    utils.ensure_states_sent(mocked_controller, expected_states)
+    assert dev.on == {
+        None: features.OnFeature(on=False, func_class="power", func_instance=None)
     }
 
 

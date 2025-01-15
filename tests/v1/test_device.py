@@ -222,6 +222,51 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 }
             ),
         ),
+        # Glass door
+        (
+            {
+                "id": "id",
+                "device_id": "device_id",
+                "model": "glass-door",
+                "device_class": "glass-door",
+                "default_name": "default_name",
+                "default_image": "glass-door-icon",
+                "friendly_name": "friendly_name",
+                "functions": ["functions!"],
+                "states": [
+                    device.HubspaceState(
+                        **{
+                            "functionClass": "power",
+                            "functionInstance": None,
+                            "lastUpdateTime": 1668551478232,
+                            "value": "off",
+                        }
+                    )
+                ],
+            },
+            device.HubspaceDevice(
+                **{
+                    "id": "id",
+                    "device_id": "device_id",
+                    "model": "glass-door",
+                    "device_class": "switch",
+                    "default_name": "default_name",
+                    "default_image": "glass-door-icon",
+                    "friendly_name": "friendly_name",
+                    "functions": ["functions!"],
+                    "states": [
+                        device.HubspaceState(
+                            **{
+                                "functionClass": "power",
+                                "functionInstance": None,
+                                "lastUpdateTime": 1668551478232,
+                                "value": "off",
+                            }
+                        )
+                    ],
+                }
+            ),
+        ),        
     ],
 )
 def test_HubspaceDevice(hs_device, expected):
