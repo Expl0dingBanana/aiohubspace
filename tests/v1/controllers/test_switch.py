@@ -176,6 +176,14 @@ async def test_update_elem(mocked_controller):
                 "functionInstance": "zone-2",
             }
         ),
+        HubspaceState(
+            **{
+                "functionClass": "available",
+                "value": False,
+                "lastUpdateTime": 0,
+                "functionInstance": None,
+            }
+        ),
     ]
     for state in new_states:
         utils.modify_state(dev_update, state)
@@ -183,7 +191,17 @@ async def test_update_elem(mocked_controller):
     dev = mocked_controller.items[0]
     assert dev.on["zone-1"].on is True
     assert dev.on["zone-2"].on is False
-    assert updates == {"on"}
+    assert updates == {"on", "available"}
+    assert dev.available is False
+
+
+@pytest.mark.asyncio
+async def test_empty_update(mocked_controller):
+    switch = utils.create_devices_from_data("switch-HPDA311CWB.json")[0]
+    await mocked_controller.initialize_elem(switch)
+    assert len(mocked_controller.items) == 1
+    updates = await mocked_controller.update_elem(switch)
+    assert updates == set()
 
 
 @pytest.mark.asyncio
@@ -218,3 +236,9 @@ async def test_switch_emit_update(bridge):
     await asyncio.sleep(1)
     assert len(bridge.switches._items) == 1
     assert not bridge.switches._items[transformer.id].on["zone-2"].on
+
+
+@pytest.mark.asyncio
+async def test_set_state_empty(mocked_controller):
+    await mocked_controller.initialize_elem(switch)
+    await mocked_controller.set_state(switch.id)

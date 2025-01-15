@@ -13,6 +13,20 @@ switch = utils.create_devices_from_data("switch-HPDA311CWB.json")[0]
 
 
 @pytest.mark.asyncio
+async def test_properties(bridge):
+    stream = bridge.events
+    assert len(stream._bg_tasks) == 2
+    stream._status = event.EventStreamStatus.CONNECTING
+    assert stream.connected is False
+    assert stream.status == event.EventStreamStatus.CONNECTING
+    stream._status = event.EventStreamStatus.CONNECTED
+    assert stream.connected is True
+    stream.polling_interval = 1
+    assert stream._polling_interval == 1
+    assert stream.polling_interval == 1
+
+
+@pytest.mark.asyncio
 async def test_initialize(bridge):
     stream = bridge.events
     assert len(stream._bg_tasks) == 2
@@ -23,6 +37,39 @@ async def test_stop(bridge):
     stream = bridge.events
     await stream.stop()
     assert len(stream._bg_tasks) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "call,event_filter,resource_filter,expected",
+    [
+        (min, None, None, (min, None, None)),
+        (
+            min,
+            event.EventType.RESOURCE_UPDATED,
+            max,
+            (min, (event.EventType.RESOURCE_UPDATED,), (max,)),
+        ),
+        (
+            min,
+            (event.EventType.RESOURCE_UPDATED, event.EventType.RESOURCE_DELETED),
+            max,
+            (
+                min,
+                (event.EventType.RESOURCE_UPDATED, event.EventType.RESOURCE_DELETED),
+                (max,),
+            ),
+        ),
+    ],
+)
+async def test_subscribe(call, event_filter, resource_filter, expected, mocked_bridge):
+    events = mocked_bridge.events
+    unsub = events.subscribe(call, event_filter, resource_filter)
+    assert callable(unsub)
+    assert len(events._subscribers) == 1
+    assert events._subscribers[0] == expected
+    unsub()
+    assert len(events._subscribers) == 0
 
 
 @pytest.mark.asyncio
@@ -216,3 +263,16 @@ async def test_emit_resource_filter(
         callback.assert_called_once()
     else:
         callback.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_emit_resource_filter_exception(bridge, caplog):
+    stream = bridge.events
+    event_to_emit = event.HubspaceEvent(
+        type=event.EventType.RESOURCE_UPDATED,
+        device_id="cool_id",
+        device="im not a hubspace device",
+    )
+    stream.subscribe(min, resource_filter=(ResourceTypes.LIGHT.value,))
+    stream.emit(event.EventType.RESOURCE_UPDATED, event_to_emit)
+    assert "Unhandled exception. Please open a bug report" in caplog.text

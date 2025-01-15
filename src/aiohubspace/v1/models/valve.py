@@ -25,11 +25,9 @@ class Valve:
             setattr(self, key, value)
         instances = {}
         for function in functions:
-            try:
-                if function["functionInstance"]:
-                    instances[function["functionClass"]] = function["functionInstance"]
-            except KeyError:
-                continue
+            instances[function["functionClass"]] = function.get(
+                "functionInstance", None
+            )
         self.instances = instances
 
     def get_instance(self, elem):

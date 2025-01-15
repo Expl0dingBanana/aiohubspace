@@ -1,7 +1,10 @@
 """Test LightController"""
 
+import asyncio
+
 import pytest
 
+from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.light import LightController, features
 from aiohubspace.v1.device import HubspaceState
 
@@ -457,6 +460,7 @@ async def test_update_elem(mocked_controller):
     await mocked_controller.initialize_elem(a21_light)
     assert len(mocked_controller.items) == 1
     dev = mocked_controller.items[0]
+    dev.available = False
     dev.on.on = False
     dev_update = utils.create_devices_from_data("light-a21.json")[0]
     new_states = [
@@ -506,6 +510,14 @@ async def test_update_elem(mocked_controller):
                 "functionInstance": None,
             }
         ),
+        HubspaceState(
+            **{
+                "functionClass": "available",
+                "value": True,
+                "lastUpdateTime": 0,
+                "functionInstance": None,
+            }
+        ),
     ]
     for state in new_states:
         utils.modify_state(dev_update, state)
@@ -518,7 +530,21 @@ async def test_update_elem(mocked_controller):
     assert dev.color.green == 3
     assert dev.color.blue == 4
     assert dev.color_mode.mode == "color"
-    assert updates == {"on", "color_temperature", "dimming", "color", "color_mode"}
+    assert updates == {
+        "on",
+        "color_temperature",
+        "dimming",
+        "color",
+        "color_mode",
+        "available",
+    }
+
+
+@pytest.mark.asyncio
+async def test_update_elem_no_updates(mocked_controller):
+    await mocked_controller.initialize_elem(a21_light)
+    assert len(mocked_controller.items) == 1
+    assert not await mocked_controller.update_elem(a21_light)
 
 
 states_custom = [
@@ -577,3 +603,43 @@ async def test_update_elem_effect(new_states, expected, mocked_controller):
     await mocked_controller.update_elem(dev_update)
     dev = mocked_controller.items[0]
     assert dev.effect.effect == expected
+
+
+@pytest.mark.asyncio
+async def test_set_state_empty(mocked_controller):
+    await mocked_controller.initialize_elem(a21_light)
+    await mocked_controller.set_state(a21_light.id)
+
+
+@pytest.mark.asyncio
+async def test_light_emitting(bridge):
+    dev_update = utils.create_devices_from_data("light-a21.json")[0]
+    add_event = {
+        "type": "add",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    # Simulate a poll
+    bridge.events.emit(event.EventType.RESOURCE_ADDED, add_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.lights._items) == 1
+    # Simulate an update
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="available",
+            functionInstance=None,
+            value=False,
+        ),
+    )
+    update_event = {
+        "type": "update",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    bridge.events.emit(event.EventType.RESOURCE_UPDATED, update_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.lights._items) == 1
+    assert not bridge.lights._items[dev_update.id].available

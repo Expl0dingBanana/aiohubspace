@@ -8,6 +8,8 @@ from ..models.resource import DeviceInformation, ResourceTypes
 from ..util import ordered_list_item_to_percentage
 from .base import BaseResourcesController
 
+KNOWN_PRESETS = {"comfort-breeze"}
+
 
 class FanController(BaseResourcesController[Fan]):
     """Controller holding and managing Hubspace resources of type `fan`."""
@@ -70,10 +72,13 @@ class FanController(BaseResourcesController[Fan]):
                 speed = features.SpeedFeature(speed=percentage, speeds=speeds)
             elif state.functionClass == "fan-reverse":
                 direction = features.DirectionFeature(forward=state.value == "forward")
-            elif state.functionClass == "toggle":
+            elif (
+                state.functionClass == "toggle"
+                and state.functionInstance in KNOWN_PRESETS
+            ):
                 # I have only seen fans with a single preset
                 preset = features.PresetFeature(
-                    enabled=state.value == "on",
+                    enabled=state.value == "enabled",
                     func_class=state.functionClass,
                     func_instance=state.functionInstance,
                 )
@@ -121,8 +126,11 @@ class FanController(BaseResourcesController[Fan]):
                 if cur_item.direction.forward != new_val:
                     cur_item.direction.forward = new_val
                     updated_keys.add("direction")
-            elif state.functionClass == "toggle":
-                new_val = state.value == "on"
+            elif (
+                state.functionClass == "toggle"
+                and state.functionInstance in KNOWN_PRESETS
+            ):
+                new_val = state.value == "enabled"
                 if cur_item.preset.enabled != new_val:
                     cur_item.preset.enabled = new_val
                     updated_keys.add("preset")

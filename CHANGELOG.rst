@@ -2,8 +2,18 @@
 Changelog
 =========
 
-Version 0.6
-===========
+Version 0.6.2
+=============
+
+ * Fix an issue with fan's preset not correctly identifying its state
+
+Version 0.6.1
+=============
+
+ * Fix an issue with binary sensors to ensure they return True / False
+
+Version 0.6.0
+=============
 
  * Add the ability to send raw states to Hubspace and have the tracked device update
 

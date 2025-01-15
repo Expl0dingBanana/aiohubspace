@@ -16,7 +16,7 @@ class ResourceTypes(Enum):
     FAN = "fan"
     LANDSCAPE_TRANSFORMER = "landscape-transformer"
     LIGHT = "light"
-    LOCK = "lock"
+    LOCK = "door-lock"
     PARENT_DEVICE = "parent-device"
     POWER_OUTLET = "power-outlet"
     SWITCH = "switch"

@@ -66,12 +66,12 @@ class ValveController(BaseResourcesController[Valve]):
             if state.functionClass in ["power", "toggle"]:
                 new_state = state.value == "on"
                 if cur_item.open[state.functionInstance].open != new_state:
-                    cur_item.open[state.functionInstance].open = new_state
                     updated_keys.add("open")
+                cur_item.open[state.functionInstance].open = new_state
             elif state.functionClass == "available":
                 if cur_item.available != state.value:
-                    cur_item.available = state.value
                     updated_keys.add("available")
+                cur_item.available = state.value
         return updated_keys
 
     async def set_state(
