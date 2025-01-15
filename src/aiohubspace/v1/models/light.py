@@ -1,4 +1,3 @@
-from contextlib import suppress
 from dataclasses import dataclass, field
 
 from ..models import features
@@ -12,12 +11,12 @@ class Light[HubspaceResource]:
     id: str  # ID used when interacting with Hubspace
     available: bool
 
-    on: features.OnFeature
-    color: features.ColorFeature
-    color_mode: features.ColorModeFeature
-    color_temperature: features.ColorTemperatureFeature
-    dimming: features.DimmingFeature
-    effect: features.EffectFeature
+    on: features.OnFeature | None
+    color: features.ColorFeature | None
+    color_mode: features.ColorModeFeature | None
+    color_temperature: features.ColorTemperatureFeature | None
+    dimming: features.DimmingFeature | None
+    effect: features.EffectFeature | None
 
     # Defined at initialization
     instances: dict = field(default_factory=lambda: dict(), repr=False, init=False)
@@ -32,9 +31,9 @@ class Light[HubspaceResource]:
             setattr(self, key, value)
         instances = {}
         for function in functions:
-            with suppress(KeyError):
-                if function["functionInstance"]:
-                    instances[function["functionClass"]] = function["functionInstance"]
+            instances[function["functionClass"]] = function.get(
+                "functionInstance", None
+            )
         self.instances = instances
 
     def get_instance(self, elem):

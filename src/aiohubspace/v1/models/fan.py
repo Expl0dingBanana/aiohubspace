@@ -12,9 +12,9 @@ class Fan:
     available: bool
 
     on: features.OnFeature
-    speed: features.SpeedFeature
-    direction: features.DirectionFeature
-    preset: features.PresetFeature
+    speed: features.SpeedFeature | None
+    direction: features.DirectionFeature | None
+    preset: features.PresetFeature | None
 
     # Defined at initialization
     instances: dict = field(default_factory=lambda: dict(), repr=False, init=False)
@@ -29,11 +29,9 @@ class Fan:
             setattr(self, key, value)
         instances = {}
         for function in functions:
-            try:
-                if function["functionInstance"]:
-                    instances[function["functionClass"]] = function["functionInstance"]
-            except KeyError:
-                continue
+            instances[function["functionClass"]] = function.get(
+                "functionInstance", None
+            )
         self.instances = instances
 
     def get_instance(self, elem):
@@ -59,24 +57,28 @@ class Fan:
     @property
     def is_on(self) -> bool:
         """Return bool if fan is currently powered on."""
-        if self.on is not None:
+        if self.on:
             return self.on.on
         return False
 
     @property
     def current_direction(self) -> bool:
         """Return if the direction is forward"""
-        return self.direction.forward
+        if self.direction:
+            return self.direction.forward
+        return False
 
     @property
     def current_speed(self) -> int:
         """Current speed of the fan, as a percentage"""
-        return self.speed.speed
+        if self.speed:
+            return self.speed.speed
+        return 0
 
     @property
     def current_preset(self) -> str | None:
         """Current fan preset"""
-        if self.preset.enabled:
+        if self.preset and self.preset.enabled:
             return self.preset.func_instance
         else:
             return None

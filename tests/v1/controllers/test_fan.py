@@ -1,9 +1,11 @@
 """Test FanController"""
 
+import asyncio
 import logging
 
 import pytest
 
+from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.fan import FanController, features
 from aiohubspace.v1.device import HubspaceState
 
@@ -131,10 +133,7 @@ async def test_set_speed(speed, expected_speed, mocked_controller):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "on",
-    [
-        (True,),
-        (False,),
-    ],
+    [True, False],
 )
 @pytest.mark.parametrize(
     "forward, value",
@@ -148,7 +147,7 @@ async def test_set_direction(on, forward, value, mocked_controller, caplog):
     await mocked_controller.initialize_elem(zandra_fan)
     assert len(mocked_controller.items) == 1
     dev = mocked_controller.items[0]
-    dev.on.on = False
+    dev.on.on = on
     dev.direction.forward = not forward
     await mocked_controller.set_direction(zandra_fan.id, forward)
     req = utils.get_json_call(mocked_controller)
@@ -239,6 +238,22 @@ async def test_update_elem(mocked_controller):
                 "functionInstance": "fan-power",
             }
         ),
+        HubspaceState(
+            **{
+                "functionClass": "toggle",
+                "value": "disabled",
+                "lastUpdateTime": 0,
+                "functionInstance": "comfort-breeze",
+            }
+        ),
+        HubspaceState(
+            **{
+                "functionClass": "available",
+                "value": False,
+                "lastUpdateTime": 0,
+                "functionInstance": None,
+            }
+        ),
     ]
     for state in new_states:
         utils.modify_state(dev_update, state)
@@ -248,7 +263,16 @@ async def test_update_elem(mocked_controller):
     assert dev.speed.speed == 16
     assert dev.direction.forward is True
     assert dev.on.on is False
-    assert updates == {"speed", "direction", "on"}
+    assert dev.available is False
+    assert updates == {"speed", "direction", "on", "preset", "available"}
+
+
+@pytest.mark.asyncio
+async def test_update_elem_no_updates(mocked_controller):
+    await mocked_controller.initialize_elem(zandra_fan)
+    assert len(mocked_controller.items) == 1
+    updates = await mocked_controller.update_elem(zandra_fan)
+    assert updates == set()
 
 
 # @TODO - Create tests for BaseResourcesController
@@ -267,3 +291,43 @@ async def test_update(mocked_controller):
     ]
     await mocked_controller.update(zandra_fan.id, states=manual_update)
     assert dev.on.on is False
+
+
+@pytest.mark.asyncio
+async def test_set_state_empty(mocked_controller):
+    await mocked_controller.initialize_elem(zandra_fan)
+    await mocked_controller.set_state(zandra_fan.id)
+
+
+@pytest.mark.asyncio
+async def test_fan_emitting(bridge):
+    dev_update = utils.create_devices_from_data("fan-ZandraFan.json")[0]
+    add_event = {
+        "type": "add",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    # Simulate a poll
+    bridge.events.emit(event.EventType.RESOURCE_ADDED, add_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.fans._items) == 1
+    # Simulate an update
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="available",
+            functionInstance=None,
+            value=False,
+        ),
+    )
+    update_event = {
+        "type": "update",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    bridge.events.emit(event.EventType.RESOURCE_UPDATED, update_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.fans._items) == 1
+    assert not bridge.fans._items[dev_update.id].available

@@ -1,7 +1,10 @@
 """Test ValveController"""
 
+import asyncio
+
 import pytest
 
+from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.valve import ValveController, features
 from aiohubspace.v1.device import HubspaceState
 
@@ -89,6 +92,15 @@ async def test_turn_off(mocked_controller):
 
 
 @pytest.mark.asyncio
+async def test_empty_update(mocked_controller):
+    valve = utils.create_devices_from_data("water-timer.json")[0]
+    await mocked_controller.initialize_elem(valve)
+    assert len(mocked_controller.items) == 1
+    updates = await mocked_controller.update_elem(valve)
+    assert updates == set()
+
+
+@pytest.mark.asyncio
 async def test_update_elem(mocked_controller):
     await mocked_controller.initialize_elem(valve)
     assert len(mocked_controller.items) == 1
@@ -110,6 +122,14 @@ async def test_update_elem(mocked_controller):
                 "functionInstance": "spigot-2",
             }
         ),
+        HubspaceState(
+            **{
+                "functionClass": "available",
+                "value": False,
+                "lastUpdateTime": 0,
+                "functionInstance": None,
+            }
+        ),
     ]
     for state in new_states:
         utils.modify_state(dev_update, state)
@@ -117,4 +137,45 @@ async def test_update_elem(mocked_controller):
     dev = mocked_controller.items[0]
     assert dev.open["spigot-1"].open is True
     assert dev.open["spigot-2"].open is False
-    assert updates == {"open"}
+    assert dev.available is False
+    assert updates == {"open", "available"}
+
+
+@pytest.mark.asyncio
+async def test_set_state_empty(mocked_controller):
+    await mocked_controller.initialize_elem(valve)
+    await mocked_controller.set_state(valve.id)
+
+
+@pytest.mark.asyncio
+async def test_valve_emitting(bridge):
+    dev_update = utils.create_devices_from_data("water-timer.json")[0]
+    add_event = {
+        "type": "add",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    # Simulate a poll
+    bridge.events.emit(event.EventType.RESOURCE_ADDED, add_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.valves._items) == 1
+    # Simulate an update
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="available",
+            functionInstance=None,
+            value=False,
+        ),
+    )
+    update_event = {
+        "type": "update",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    bridge.events.emit(event.EventType.RESOURCE_UPDATED, update_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.valves._items) == 1
+    assert not bridge.valves._items[dev_update.id].available

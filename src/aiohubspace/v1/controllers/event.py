@@ -11,7 +11,7 @@ from aiohttp.client_exceptions import ClientError
 
 from ..device import HubspaceDevice, get_hs_device
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .. import HubspaceBridgeV1
 
 
@@ -99,6 +99,7 @@ class EventStream:
         """Stop listening for events."""
         for task in self._bg_tasks:
             task.cancel()
+        self._status = EventStreamStatus.DISCONNECTED
         self._bg_tasks = []
 
     def subscribe(
@@ -140,17 +141,16 @@ class EventStream:
             try:
                 if event_filter is not None and event_type not in event_filter:
                     continue
-                if data is not None:
-                    if resource_filter is not None:
-                        if (
-                            "device" in data
-                            and data["device"]
-                            and not any(
-                                data["device"].device_class == res_filter
-                                for res_filter in resource_filter
-                            )
-                        ):
-                            continue
+                if data is not None and resource_filter is not None:
+                    if (
+                        "device" in data
+                        and data["device"]
+                        and not any(
+                            data["device"].device_class == res_filter
+                            for res_filter in resource_filter
+                        )
+                    ):
+                        continue
                 if iscoroutinefunction(callback):
                     asyncio.create_task(callback(event_type, data))
                 else:
@@ -166,9 +166,10 @@ class EventStream:
             skipped_ids = []
             try:
                 data = await self._bridge.fetch_data()
+                self._status = EventStreamStatus.CONNECTED
                 for dev in data:
                     hs_dev = get_hs_device(dev)
-                    if not hs_dev.device_class:
+                    if not hs_dev.device_class:  # pragma: no cover
                         continue
                     event_type = EventType.RESOURCE_UPDATED
                     if hs_dev.id not in self._bridge.tracked_devices:
@@ -181,10 +182,13 @@ class EventStream:
                         )
                     )
                     processed_ids.append(hs_dev.id)
-            except (ClientError, asyncio.TimeoutError) as err:
+            except (ClientError, asyncio.TimeoutError) as err:  # pragma: no cover
                 # Auto-retry will take care of the issue
                 self._logger.warning(err)
-            except Exception as err:
+            except asyncio.CancelledError:  # pragma: no cover
+                self._logger.info("Shutting down event reader")
+                break
+            except Exception as err:  # pragma: no cover
                 self._logger.exception(err)
                 raise err
             else:
@@ -206,5 +210,8 @@ class EventStream:
             try:
                 event: HubspaceEvent = await self._event_queue.get()
                 self.emit(event["type"], event)
-            except Exception:
+            except asyncio.CancelledError:
+                self._logger.info("Shutting down event processor")
+                break
+            except Exception:  # pragma: no cover
                 self._logger.exception("Unhandled exception. Please open a bug report")

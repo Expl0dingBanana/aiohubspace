@@ -1,6 +1,10 @@
+import asyncio
+
 import pytest
 
+from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.device import DeviceController, split_sensor_data
+from aiohubspace.v1.device import HubspaceState
 from aiohubspace.v1.models.resource import DeviceInformation
 from aiohubspace.v1.models.sensor import HubspaceSensor, HubspaceSensorError
 
@@ -181,3 +185,60 @@ def test_split_sensor_data(state, expected_val, expected_unit):
     actual_val, actual_unit = split_sensor_data(state)
     assert actual_val == expected_val
     assert actual_unit == expected_unit
+
+
+@pytest.mark.asyncio
+async def test_valve_emitting(bridge):
+    dev_update = utils.create_devices_from_data("freezer.json")[0]
+    add_event = {
+        "type": "add",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    # Simulate a poll
+    bridge.events.emit(event.EventType.RESOURCE_ADDED, add_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.devices._items) == 1
+    dev = bridge.devices._items[dev_update.id]
+    assert dev.available
+    assert dev.sensors["wifi-rssi"].value == -71
+    assert dev.binary_sensors["error|temperature-sensor-failure"].value is False
+    # Simulate an update
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="available",
+            functionInstance=None,
+            value=False,
+        ),
+    )
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="wifi-rssi",
+            functionInstance=None,
+            value=-42,
+        ),
+    )
+    utils.modify_state(
+        dev_update,
+        HubspaceState(
+            functionClass="error",
+            functionInstance="temperature-sensor-failure",
+            value="alerting",
+        ),
+    )
+    update_event = {
+        "type": "update",
+        "device_id": dev_update.id,
+        "device": dev_update,
+    }
+    bridge.events.emit(event.EventType.RESOURCE_UPDATED, update_event)
+    # Bad way to check, but just wait a second so it can get processed
+    await asyncio.sleep(1)
+    assert len(bridge.devices._items) == 1
+    dev = bridge.devices._items[dev_update.id]
+    assert not dev.available
+    assert dev.sensors["wifi-rssi"].value == -42
+    assert dev.binary_sensors["error|temperature-sensor-failure"].value is True

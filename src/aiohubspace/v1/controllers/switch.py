@@ -70,12 +70,12 @@ class SwitchController(BaseResourcesController[Switch]):
             if state.functionClass in ["power", "toggle"]:
                 new_val = state.value == "on"
                 if cur_item.on[state.functionInstance].on != new_val:
-                    cur_item.on[state.functionInstance].on = state.value == "on"
                     updated_keys.add("on")
+                cur_item.on[state.functionInstance].on = state.value == "on"
             elif state.functionClass == "available":
                 if cur_item.available != state.value:
-                    cur_item.available = state.value
                     updated_keys.add("available")
+                cur_item.available = state.value
         return updated_keys
 
     async def set_state(
