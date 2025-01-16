@@ -8,6 +8,7 @@ from types import NoneType
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from aiohttp.client_exceptions import ClientError
+from aiohttp.web_exceptions import HTTPForbidden
 
 from ..device import HubspaceDevice, get_hs_device
 
@@ -182,7 +183,11 @@ class EventStream:
                         )
                     )
                     processed_ids.append(hs_dev.id)
-            except (ClientError, asyncio.TimeoutError) as err:  # pragma: no cover
+            except (
+                ClientError,
+                asyncio.TimeoutError,
+                HTTPForbidden,
+            ) as err:  # pragma: no cover
                 # Auto-retry will take care of the issue
                 self._logger.warning(err)
             except asyncio.CancelledError:  # pragma: no cover
