@@ -1,4 +1,13 @@
-__all__ = ["HubspaceBridgeV1", "HubspaceError", "InvalidAuth", "InvalidResponse"]
+__all__ = [
+    "HubspaceError",
+    "InvalidAuth",
+    "InvalidResponse",
+    "HubspaceDevice",
+    "HubspaceState",
+    "anonymize_device",
+    "anonymize_devices",
+    "v1",
+]
 
 
 from importlib.metadata import PackageNotFoundError, version
@@ -13,5 +22,7 @@ finally:
     del version, PackageNotFoundError
 
 
+from . import v1
+from .anonomyize_data import anonymize_device, anonymize_devices
+from .device import HubspaceDevice, HubspaceState
 from .errors import HubspaceError, InvalidAuth, InvalidResponse
-from .v1 import HubspaceBridgeV1
