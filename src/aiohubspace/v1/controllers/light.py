@@ -7,7 +7,7 @@ from ..device import HubspaceDevice, HubspaceState
 from ..models import features
 from ..models.light import Light, LightPut
 from ..models.resource import DeviceInformation, ResourceTypes
-from ..util import process_names, process_range
+from ...util import process_names, process_range
 from .base import BaseResourcesController
 
 

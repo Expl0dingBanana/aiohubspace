@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from ..util import percentage_to_ordered_list_item
+from ...util import percentage_to_ordered_list_item
 
 
 @dataclass

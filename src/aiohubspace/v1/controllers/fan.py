@@ -5,7 +5,7 @@ from ..device import HubspaceDevice
 from ..models import features
 from ..models.fan import Fan, FanPut
 from ..models.resource import DeviceInformation, ResourceTypes
-from ..util import ordered_list_item_to_percentage
+from ...util import ordered_list_item_to_percentage
 from .base import BaseResourcesController
 
 KNOWN_PRESETS = {"comfort-breeze"}
