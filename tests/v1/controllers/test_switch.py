@@ -52,6 +52,7 @@ async def test_initialize_multi(mocked_controller):
         ),
     }
 
+
 @pytest.mark.asyncio
 async def test_initialize_glass_door(mocked_controller):
     await mocked_controller.initialize_elem(glass_door)
@@ -61,6 +62,7 @@ async def test_initialize_glass_door(mocked_controller):
     assert dev.on == {
         None: features.OnFeature(on=False, func_class="power", func_instance=None),
     }
+
 
 @pytest.mark.asyncio
 async def test_turn_on(mocked_controller):
@@ -111,6 +113,7 @@ async def test_turn_on_multi(mocked_controller):
             on=False, func_class="toggle", func_instance="zone-3"
         ),
     }
+
 
 @pytest.mark.asyncio
 async def test_turn_on_glass_door(mocked_controller):
@@ -182,6 +185,7 @@ async def test_turn_off_multi(mocked_controller):
             on=False, func_class="toggle", func_instance="zone-3"
         ),
     }
+
 
 @pytest.mark.asyncio
 async def test_turn_off_glass_door(mocked_controller):

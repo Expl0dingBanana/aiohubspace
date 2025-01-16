@@ -91,6 +91,7 @@ class HubspaceDevice:
         elif self.device_class == "glass-door":
             self.device_class = "switch"
 
+
 def get_hs_device(hs_device: dict[str, Any]) -> HubspaceDevice:
     """Convert the Hubspace device definition into a HubspaceDevice"""
     description = hs_device.get("description", {})

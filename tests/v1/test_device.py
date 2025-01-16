@@ -266,7 +266,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     ],
                 }
             ),
-        ),        
+        ),
     ],
 )
 def test_HubspaceDevice(hs_device, expected):
