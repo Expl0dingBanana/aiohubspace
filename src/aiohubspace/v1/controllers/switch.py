@@ -1,6 +1,6 @@
 """Controller holding and managing Hubspace resources of type `switch`."""
 
-from ..device import HubspaceDevice
+from ...device import HubspaceDevice
 from ..models import features
 from ..models.resource import DeviceInformation, ResourceTypes
 from ..models.switch import Switch, SwitchPut

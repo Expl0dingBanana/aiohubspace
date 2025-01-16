@@ -6,10 +6,9 @@ from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Callable, Generic, Iterator, TypeVar
 
-from aiohubspace.errors import DeviceNotFound, ExceededMaximumRetries
-
+from ...device import HubspaceDevice, HubspaceState, get_hs_device
+from ...errors import DeviceNotFound, ExceededMaximumRetries
 from .. import v1_const
-from ..device import HubspaceDevice, HubspaceState, get_hs_device
 from ..models.resource import ResourceTypes
 from .event import EventCallBackType, EventType, HubspaceEvent
 

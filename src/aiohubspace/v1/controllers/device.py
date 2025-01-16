@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from ..device import HubspaceDevice, HubspaceState, get_hs_device
+from ...device import HubspaceDevice, HubspaceState, get_hs_device
 from ..models import sensor
 from ..models.device import Device
 from ..models.resource import DeviceInformation, ResourceTypes

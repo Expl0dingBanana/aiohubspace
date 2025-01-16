@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, NotRequired, TypedDict
 from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden
 
-from ..device import HubspaceDevice, get_hs_device
+from ...device import HubspaceDevice, get_hs_device
 
 if TYPE_CHECKING:  # pragma: no cover
     from .. import HubspaceBridgeV1

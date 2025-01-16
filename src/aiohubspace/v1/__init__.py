@@ -1,6 +1,6 @@
 """Controls Hubspace devices on v1 API"""
 
-__all__ = ["HubspaceBridgeV1", "InvalidAuth", "InvalidResponse", "HubspaceError"]
+__all__ = ["HubspaceBridgeV1"]
 
 import asyncio
 import contextlib
@@ -13,13 +13,7 @@ from typing import Any, Callable, Generator, Optional
 import aiohttp
 from aiohttp import web_exceptions
 
-from ..errors import (
-    DeviceNotFound,
-    ExceededMaximumRetries,
-    HubspaceError,
-    InvalidAuth,
-    InvalidResponse,
-)
+from ..errors import DeviceNotFound, ExceededMaximumRetries
 from . import v1_const
 from .auth import HubspaceAuth
 from .controllers.base import BaseResourcesController, HubspaceResource

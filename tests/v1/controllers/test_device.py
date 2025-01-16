@@ -2,9 +2,9 @@ import asyncio
 
 import pytest
 
+from aiohubspace.device import HubspaceState
 from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.device import DeviceController, split_sensor_data
-from aiohubspace.v1.device import HubspaceState
 from aiohubspace.v1.models.resource import DeviceInformation
 from aiohubspace.v1.models.sensor import HubspaceSensor, HubspaceSensorError
 

@@ -67,10 +67,3 @@ def process_range(range_vals: dict) -> list[Any]:
         if range_max not in supported_range:
             supported_range.append(range_max)
     return supported_range
-
-
-def process_names(values: list[dict]) -> set[str]:
-    vals = set()
-    for val in values:
-        vals.add(val["name"])
-    return vals
