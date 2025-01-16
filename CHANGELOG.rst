@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 0.7.0
+=============
+
+ * Add support for glass-doors
+
 Version 0.6.4
 =============
 

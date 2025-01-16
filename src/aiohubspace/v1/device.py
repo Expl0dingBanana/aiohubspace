@@ -90,6 +90,7 @@ class HubspaceDevice:
         # Fix glass doors - Treat as a switch
         elif self.device_class == "glass-door":
             self.device_class = "switch"
+            self.manufacturerName = "Feather River Doors"
 
 
 def get_hs_device(hs_device: dict[str, Any]) -> HubspaceDevice:

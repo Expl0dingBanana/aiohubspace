@@ -264,6 +264,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                             }
                         )
                     ],
+                    "manufacturerName": "Feather River Doors",
                 }
             ),
         ),
