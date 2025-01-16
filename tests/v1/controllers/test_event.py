@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
+from aiohttp.web_exceptions import HTTPForbidden
 
 from aiohubspace.v1.controllers import event
 from aiohubspace.v1.models.resource import ResourceTypes
@@ -101,6 +102,29 @@ async def test_event_reader_dev_add(bridge, mocker):
         "device_id": a21_light.id,
         "device": a21_light,
     }
+
+
+@pytest.mark.asyncio
+async def test_event_reader_forbidden_should_continue(bridge, mocker):
+    stream = bridge.events
+    stream.polling_interval = 0.2
+    await stream.stop()
+
+    def side_effect_fetch():
+        yield HTTPForbidden()
+        while True:
+            yield []
+
+    mock_fetch = mocker.patch.object(
+        bridge,
+        "fetch_data",
+        side_effect=side_effect_fetch(),
+    )
+    await stream.initialize_reader()
+    await asyncio.sleep(1)
+    reader_task = stream._bg_tasks[0]
+    assert not reader_task.done()
+    assert mock_fetch.call_count >= 2
 
 
 @pytest.mark.asyncio
