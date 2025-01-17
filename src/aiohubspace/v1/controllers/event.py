@@ -191,7 +191,6 @@ class EventStream:
                 # Auto-retry will take care of the issue
                 self._logger.warning(err)
             except (HTTPForbidden, HTTPTooManyRequests) as err:
-                self._logger.warning(err)
                 consecutive_http_errors += 1
                 backoff_time = min(consecutive_http_errors * self.polling_interval, 600)
                 debug_message = (
