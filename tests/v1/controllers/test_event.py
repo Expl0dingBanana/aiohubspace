@@ -2,7 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-from aiohttp.web_exceptions import HTTPForbidden, HTTPServerError, HTTPTooManyRequests
+from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 
 from aiohubspace.v1.controllers import event
 from aiohubspace.v1.models.resource import ResourceTypes
