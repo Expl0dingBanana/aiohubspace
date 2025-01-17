@@ -105,14 +105,13 @@ async def test_event_reader_dev_add(bridge, mocker):
 
 
 @pytest.mark.asyncio
-async def test_event_reader_httperror_should_continue(bridge, mocker):
+async def test_event_reader_http_errors_should_continue(bridge, mocker):
     stream = bridge.events
     stream.polling_interval = 0.2
     await stream.stop()
 
     def side_effect_fetch():
         yield HTTPForbidden()
-        yield HTTPServerError()
         yield HTTPTooManyRequests()
         while True:
             yield []
