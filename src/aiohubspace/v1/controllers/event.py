@@ -8,7 +8,7 @@ from types import NoneType
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from aiohttp.client_exceptions import ClientError
-from aiohttp.web_exceptions import HTTPForbidden
+from aiohttp.web_exceptions import HTTPError
 
 from ..device import HubspaceDevice, get_hs_device
 
@@ -162,11 +162,13 @@ class EventStream:
     async def __event_reader(self) -> None:
         """Poll the current states"""
         self._status = EventStreamStatus.CONNECTING
+        consecutive_http_errors = 0
         while True:
             processed_ids = []
             skipped_ids = []
             try:
                 data = await self._bridge.fetch_data()
+                consecutive_http_errors = 0
                 self._status = EventStreamStatus.CONNECTED
                 for dev in data:
                     hs_dev = get_hs_device(dev)
@@ -183,13 +185,17 @@ class EventStream:
                         )
                     )
                     processed_ids.append(hs_dev.id)
-            except (
-                ClientError,
-                asyncio.TimeoutError,
-                HTTPForbidden,
-            ) as err:  # pragma: no cover
+            except (ClientError, asyncio.TimeoutError) as err:  # pragma: no cover
                 # Auto-retry will take care of the issue
                 self._logger.warning(err)
+            except HTTPError as err:
+                self._logger.warning(err)
+                consecutive_http_errors += 1
+                backoff_time = min(consecutive_http_errors * self.polling_interval, 600)
+                self._logger.warning(
+                    f"Backing off... Waiting {backoff_time} seconds before next poll."
+                )
+                await asyncio.sleep(backoff_time)
             except asyncio.CancelledError:  # pragma: no cover
                 self._logger.info("Shutting down event reader")
                 break
