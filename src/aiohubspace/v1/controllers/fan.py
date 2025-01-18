@@ -61,7 +61,7 @@ class FanController(BaseResourcesController[Fan]):
                 on = features.OnFeature(on=state.value == "on")
             elif state.functionClass == "fan-speed":
                 speeds = device.get_function_from_device(
-                    hs_device, state.functionClass, state.functionInstance
+                    hs_device.functions, state.functionClass, state.functionInstance
                 )
                 tmp_speed = set()
                 for value in speeds["values"]:

@@ -72,7 +72,7 @@ class LightController(BaseResourcesController[Light]):
         effect: features.EffectFeature | None = None
         for state in hs_device.states:
             func_def = device.get_function_from_device(
-                hs_device, state.functionClass, state.functionInstance
+                hs_device.functions, state.functionClass, state.functionInstance
             )
             if state.functionClass == "power":
                 on = features.OnFeature(

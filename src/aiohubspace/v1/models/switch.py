@@ -11,7 +11,7 @@ class Switch:
     id: str  # ID used when interacting with Hubspace
     available: bool
 
-    on: dict[str, features.OnFeature]
+    on: dict[str | None, features.OnFeature]
     # Defined at initialization
     instances: dict = field(default_factory=lambda: dict(), repr=False, init=False)
     device_information: DeviceInformation = field(default_factory=DeviceInformation)

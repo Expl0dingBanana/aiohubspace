@@ -51,9 +51,11 @@ class HubspaceDevice:
         ):
             self.device_class = "light"
         # Fix exhaust fans
-        if self.device_class == "exhaust-fan":
-            if self.default_image == "fan-exhaust-icon":
-                self.model = "BF1112"
+        if (
+            self.device_class == "exhaust-fan"
+            and self.default_image == "fan-exhaust-icon"
+        ):
+            self.model = "BF1112"
         # Fix fans
         if self.device_class in ["fan", "ceiling-fan"]:
             if not self.model and self.default_image == "ceiling-fan-snyder-park-icon":
@@ -77,16 +79,10 @@ class HubspaceDevice:
                 self.model = "12A19060WRGBWH2"
             elif self.default_image == "slide-dimmer-icon":
                 self.model = "HPDA110NWBP"
-        # Fix locks
-        elif self.device_class == "lock":
-            pass
         # Fix switches
         elif self.device_class == "switch":
             if self.default_image == "smart-switch-icon" and self.model == "TBD":
                 self.model = "HPSA11CWB"
-        # Fix valves
-        elif self.device_class == "valve":
-            pass
         # Fix glass doors - Treat as a switch
         elif self.device_class == "glass-door":
             self.device_class = "switch"
@@ -124,9 +120,15 @@ def get_hs_device(hs_device: dict[str, Any]) -> HubspaceDevice:
 
 
 def get_function_from_device(
-    hs_device: HubspaceDevice, function_class: str, function_instance
-) -> dict:
-    for func in hs_device.functions:
+    functions: list[dict], function_class: str, function_instance: str | None = None
+) -> dict | None:
+    """Find a function from a device
+
+    :param functions: List of functions to search through
+    :param function_class: Function class to find
+    :param function_instance: Function instance to find. Default: None
+    """
+    for func in functions:
         if func.get("functionClass") != function_class:
             continue
         if func.get("functionInstance") != function_instance:

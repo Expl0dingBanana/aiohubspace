@@ -5,6 +5,7 @@ from ..models import features
 from ..models.resource import DeviceInformation, ResourceTypes
 from ..models.valve import Valve, ValvePut
 from .base import BaseResourcesController
+from aiohubspace import errors
 
 
 class ValveController(BaseResourcesController[Valve]):
@@ -82,8 +83,12 @@ class ValveController(BaseResourcesController[Valve]):
     ) -> None:
         """Set supported feature(s) to fan resource."""
         update_obj = ValvePut()
-        if valve_open is not None:
+        try:
             dev = self.get_device(device_id)
+        except errors.DeviceNotFound:
+            self._logger.info("Unable to find device %s", device_id)
+            return
+        if valve_open is not None:
             try:
                 update_obj.open = features.OpenFeature(
                     open=valve_open,

@@ -11,7 +11,7 @@ class Valve:
     id: str  # ID used when interacting with Hubspace
     available: bool
 
-    open: dict[str, features.OpenFeature]
+    open: dict[str | None, features.OpenFeature]
     # Defined at initialization
     instances: dict = field(default_factory=lambda: dict(), repr=False, init=False)
     device_information: DeviceInformation = field(default_factory=DeviceInformation)

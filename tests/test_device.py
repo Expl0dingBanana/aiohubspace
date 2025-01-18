@@ -8,8 +8,9 @@ from aiohubspace import device
 current_path = os.path.dirname(os.path.realpath(__file__))
 
 
-with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
+with open(os.path.join(current_path, "v1", "data", "device_lock.json")) as fh:
     device_lock_response = json.load(fh)
+    lock_dev = device.get_hs_device(device_lock_response[0])
 
 
 @pytest.mark.parametrize(
@@ -268,6 +269,188 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 }
             ),
         ),
+        # Exhaust fan
+        (
+            {
+                "id": "id",
+                "device_id": "device_id",
+                "model": "glass-door",
+                "device_class": "exhaust-fan",
+                "default_name": "default_name",
+                "default_image": "fan-exhaust-icon",
+                "friendly_name": "friendly_name",
+                "functions": ["functions!"],
+                "states": [
+                    device.HubspaceState(
+                        **{
+                            "functionClass": "power",
+                            "functionInstance": None,
+                            "lastUpdateTime": 1668551478232,
+                            "value": "off",
+                        }
+                    )
+                ],
+            },
+            device.HubspaceDevice(
+                **{
+                    "id": "id",
+                    "device_id": "device_id",
+                    "model": "BF1112",
+                    "device_class": "exhaust-fan",
+                    "default_name": "default_name",
+                    "default_image": "fan-exhaust-icon",
+                    "friendly_name": "friendly_name",
+                    "functions": ["functions!"],
+                    "states": [
+                        device.HubspaceState(
+                            **{
+                                "functionClass": "power",
+                                "functionInstance": None,
+                                "lastUpdateTime": 1668551478232,
+                                "value": "off",
+                            }
+                        )
+                    ],
+                    "manufacturerName": None,
+                }
+            ),
+        ),
+        # 12A19060WRGBWH2
+        (
+            {
+                "id": "id",
+                "device_id": "device_id",
+                "model": "glass-door",
+                "device_class": "light",
+                "default_name": "default_name",
+                "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
+                "friendly_name": "friendly_name",
+                "functions": ["functions!"],
+                "states": [
+                    device.HubspaceState(
+                        **{
+                            "functionClass": "power",
+                            "functionInstance": None,
+                            "lastUpdateTime": 1668551478232,
+                            "value": "off",
+                        }
+                    )
+                ],
+            },
+            device.HubspaceDevice(
+                **{
+                    "id": "id",
+                    "device_id": "device_id",
+                    "model": "12A19060WRGBWH2",
+                    "device_class": "light",
+                    "default_name": "default_name",
+                    "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
+                    "friendly_name": "friendly_name",
+                    "functions": ["functions!"],
+                    "states": [
+                        device.HubspaceState(
+                            **{
+                                "functionClass": "power",
+                                "functionInstance": None,
+                                "lastUpdateTime": 1668551478232,
+                                "value": "off",
+                            }
+                        )
+                    ],
+                    "manufacturerName": None,
+                }
+            ),
+        ),
+        (
+            {
+                "id": "id",
+                "device_id": "device_id",
+                "model": "glass-door",
+                "device_class": "light",
+                "default_name": "default_name",
+                "default_image": "slide-dimmer-icon",
+                "friendly_name": "friendly_name",
+                "functions": ["functions!"],
+                "states": [
+                    device.HubspaceState(
+                        **{
+                            "functionClass": "power",
+                            "functionInstance": None,
+                            "lastUpdateTime": 1668551478232,
+                            "value": "off",
+                        }
+                    )
+                ],
+            },
+            device.HubspaceDevice(
+                **{
+                    "id": "id",
+                    "device_id": "device_id",
+                    "model": "HPDA110NWBP",
+                    "device_class": "light",
+                    "default_name": "default_name",
+                    "default_image": "slide-dimmer-icon",
+                    "friendly_name": "friendly_name",
+                    "functions": ["functions!"],
+                    "states": [
+                        device.HubspaceState(
+                            **{
+                                "functionClass": "power",
+                                "functionInstance": None,
+                                "lastUpdateTime": 1668551478232,
+                                "value": "off",
+                            }
+                        )
+                    ],
+                    "manufacturerName": None,
+                }
+            ),
+        ),
+        (
+            {
+                "id": "id",
+                "device_id": "device_id",
+                "model": "TBD",
+                "device_class": "switch",
+                "default_name": "default_name",
+                "default_image": "smart-switch-icon",
+                "friendly_name": "friendly_name",
+                "functions": ["functions!"],
+                "states": [
+                    device.HubspaceState(
+                        **{
+                            "functionClass": "power",
+                            "functionInstance": None,
+                            "lastUpdateTime": 1668551478232,
+                            "value": "off",
+                        }
+                    )
+                ],
+            },
+            device.HubspaceDevice(
+                **{
+                    "id": "id",
+                    "device_id": "device_id",
+                    "model": "HPSA11CWB",
+                    "device_class": "switch",
+                    "default_name": "default_name",
+                    "default_image": "smart-switch-icon",
+                    "friendly_name": "friendly_name",
+                    "functions": ["functions!"],
+                    "states": [
+                        device.HubspaceState(
+                            **{
+                                "functionClass": "power",
+                                "functionInstance": None,
+                                "lastUpdateTime": 1668551478232,
+                                "value": "off",
+                            }
+                        )
+                    ],
+                    "manufacturerName": None,
+                }
+            ),
+        ),
     ],
 )
 def test_HubspaceDevice(hs_device, expected):
@@ -348,7 +531,28 @@ def test_get_hs_device(hs_device, expected_attrs):
         ),
     ],
 )
-def test_HubSpaceState(data, expected_attrs):
+def test_HubspaceState(data, expected_attrs):
     elem = device.HubspaceState(**data)
     for key, val in expected_attrs.items():
         assert getattr(elem, key) == val
+
+
+def test_HubspaceDevice_hash():
+    dev = device.get_hs_device(device_lock_response[0])
+    hash_check = {dev: True}
+    assert dev in hash_check
+
+
+@pytest.mark.parametrize(
+    "functions, func_class, func_instance, expected",
+    [
+        ([], "cool", "beans", None),
+        (lock_dev.functions, "lock-pin", None, None),
+        (lock_dev.functions, "lock-pin", "lock-pin-9", lock_dev.functions[19]),
+    ],
+)
+def test_get_function_from_device(functions, func_class, func_instance, expected):
+    assert (
+        device.get_function_from_device(functions, func_class, func_instance)
+        == expected
+    )

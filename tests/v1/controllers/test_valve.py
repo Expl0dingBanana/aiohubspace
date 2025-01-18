@@ -6,7 +6,7 @@ import pytest
 
 from aiohubspace.device import HubspaceState
 from aiohubspace.v1.controllers import event
-from aiohubspace.v1.controllers.valve import ValveController, features
+from aiohubspace.v1.controllers.valve import ValveController, features, ValvePut
 
 from .. import utils
 
@@ -139,6 +139,12 @@ async def test_update_elem(mocked_controller):
     assert dev.open["spigot-2"].open is False
     assert dev.available is False
     assert updates == {"open", "available"}
+
+
+@pytest.mark.asyncio
+async def test_set_state_empty(mocked_controller):
+    await mocked_controller.initialize_elem(valve)
+    await mocked_controller.set_state(valve.id)
 
 
 @pytest.mark.asyncio
