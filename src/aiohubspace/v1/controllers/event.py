@@ -137,22 +137,40 @@ class EventStream:
             try:
                 if event_filter is not None and event_type not in event_filter:
                     continue
-                if data is not None and resource_filter is not None:
-                    if (
+                if (
+                    resource_filter is not None
+                    and data is not None
+                    and (
                         "device" in data
                         and data["device"]
                         and not any(
                             data["device"].device_class == res_filter
                             for res_filter in resource_filter
                         )
-                    ):
-                        continue
+                    )
+                ):
+                    continue
                 if iscoroutinefunction(callback):
                     asyncio.create_task(callback(event_type, data))
                 else:
                     callback(event_type, data)
             except Exception:
                 self._logger.exception("Unhandled exception. Please open a bug report")
+
+    async def process_backoff(self, attempt: int) -> None:
+        """Handle backoff timer for Hubspace API
+
+        :param attempt: Number of attempts
+        """
+        backoff_time = min(attempt * self.polling_interval, 600)
+        debug_message = f"Waiting {backoff_time} seconds before next poll"
+        if attempt == 1:
+            self._logger.info("Lost connection to the Hubspace API.")
+            self._logger.debug(debug_message)
+        if self._status != EventStreamStatus.DISCONNECTED:
+            self._status = EventStreamStatus.DISCONNECTED
+            self.emit(EventType.DISCONNECTED)
+        await asyncio.sleep(backoff_time)
 
     async def gather_data(self) -> list[dict[Any, str]]:
         """Gather all data from the Hubspace API"""
@@ -163,21 +181,9 @@ class EventStream:
             except (ClientError, asyncio.TimeoutError) as err:
                 self._logger.debug(err)
                 raise err
-            except (HTTPForbidden, HTTPTooManyRequests) as err:
+            except (HTTPForbidden, HTTPTooManyRequests):
                 consecutive_http_errors += 1
-                backoff_time = min(consecutive_http_errors * self.polling_interval, 600)
-                debug_message = (
-                    f"Waiting {backoff_time} seconds before next poll: {err}"
-                )
-                if consecutive_http_errors == 1:
-                    self._logger.info(f"Lost connection to the Hubspace API: {err}.")
-                    self._logger.debug(debug_message)
-                else:
-                    self._logger.debug(debug_message)
-                if self._status != EventStreamStatus.DISCONNECTED:
-                    self._status = EventStreamStatus.DISCONNECTED
-                    self.emit(EventType.DISCONNECTED)
-                await asyncio.sleep(backoff_time)
+                await self.process_backoff(consecutive_http_errors)
             except Exception as err:
                 self._logger.exception(
                     "Unknown error occurred. Please open a bug report."
