@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, NotRequired, TypedDict
 from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 
-from ..device import HubspaceDevice, get_hs_device
+from ...device import HubspaceDevice, get_hs_device
+from ...types import EventType
 
 if TYPE_CHECKING:  # pragma: no cover
     from .. import HubspaceBridgeV1
@@ -22,18 +23,6 @@ class EventStreamStatus(Enum):
     CONNECTING = 0
     CONNECTED = 1
     DISCONNECTED = 2
-
-
-class EventType(Enum):
-    """Enum with possible Events."""
-
-    RESOURCE_ADDED = "add"
-    RESOURCE_UPDATED = "update"
-    RESOURCE_DELETED = "delete"
-    # connection events emitted by (this) events controller
-    CONNECTED = "connected"
-    DISCONNECTED = "disconnected"
-    RECONNECTED = "reconnected"
 
 
 class HubspaceEvent(TypedDict):

@@ -5,7 +5,7 @@ __all__ = ["anonymize_devices", "anonymize_device"]
 from dataclasses import asdict
 from uuid import uuid4
 
-from .v1.device import HubspaceDevice, HubspaceState
+from .device import HubspaceDevice, HubspaceState
 
 ANONYMIZE_STATES: set[str] = {"wifi-ssid", "wifi-mac-address", "ble-mac-address"}
 

@@ -1,6 +1,6 @@
 """Controller holding and managing Hubspace resources of type `valve`."""
 
-from ..device import HubspaceDevice
+from ...device import HubspaceDevice
 from ..models import features
 from ..models.resource import DeviceInformation, ResourceTypes
 from ..models.valve import Valve, ValvePut

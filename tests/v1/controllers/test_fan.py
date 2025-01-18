@@ -5,9 +5,9 @@ import logging
 
 import pytest
 
+from aiohubspace.device import HubspaceState
 from aiohubspace.v1.controllers import event
 from aiohubspace.v1.controllers.fan import FanController, features
-from aiohubspace.v1.device import HubspaceState
 
 from .. import utils
 

@@ -2,13 +2,20 @@
 
 from contextlib import suppress
 
-from .. import device
-from ..device import HubspaceDevice, HubspaceState
+from ... import device
+from ...device import HubspaceDevice, HubspaceState
+from ...util import process_range
 from ..models import features
 from ..models.light import Light, LightPut
 from ..models.resource import DeviceInformation, ResourceTypes
-from ..util import process_names, process_range
 from .base import BaseResourcesController
+
+
+def process_names(values: list[dict]) -> set[str]:
+    vals = set()
+    for val in values:
+        vals.add(val["name"])
+    return vals
 
 
 class LightController(BaseResourcesController[Light]):

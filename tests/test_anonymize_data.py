@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from aiohubspace import anonomyize_data
-from aiohubspace.v1.device import HubspaceDevice, HubspaceState
+from aiohubspace.device import HubspaceDevice, HubspaceState
 
 POWER_STATE = {
     "functionClass": "power",

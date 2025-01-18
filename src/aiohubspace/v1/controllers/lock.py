@@ -1,6 +1,6 @@
 """Controller holding and managing Hubspace resources of type `lock`."""
 
-from ..device import HubspaceDevice
+from ...device import HubspaceDevice
 from ..models import features
 from ..models.lock import Lock, LockPut
 from ..models.resource import DeviceInformation, ResourceTypes

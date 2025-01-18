@@ -102,7 +102,7 @@ Troubleshooting
 * Hubspace Device shows incorrect model
 
   * Hubspace does not always report all the pertinent information through the API.
-    To resolve this, open a PR to ``src/aiohubspace/v1/device`` and update the dataclass
+    To resolve this, open a PR to ``src/aiohubspace/device.py`` and update the dataclass
     ``HubspaceDevice.__post_init__`` function to correctly identify the device.
 
 * Hubspace is slow to update

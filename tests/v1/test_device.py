@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from aiohubspace.v1 import device
+from aiohubspace import device
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 
