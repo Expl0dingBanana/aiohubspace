@@ -5,7 +5,7 @@ from asyncio.coroutines import iscoroutinefunction
 from collections.abc import Callable
 from enum import Enum
 from types import NoneType
-from typing import TYPE_CHECKING, NotRequired, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
@@ -15,6 +15,12 @@ from ...types import EventType
 
 if TYPE_CHECKING:  # pragma: no cover
     from .. import HubspaceBridgeV1
+
+
+class BackoffException(Exception):
+    """Exception raised when a backoff is required."""
+
+    pass
 
 
 class EventStreamStatus(Enum):
@@ -131,16 +137,19 @@ class EventStream:
             try:
                 if event_filter is not None and event_type not in event_filter:
                     continue
-                if data is not None and resource_filter is not None:
-                    if (
+                if (
+                    resource_filter is not None
+                    and data is not None
+                    and (
                         "device" in data
                         and data["device"]
                         and not any(
                             data["device"].device_class == res_filter
                             for res_filter in resource_filter
                         )
-                    ):
-                        continue
+                    )
+                ):
+                    continue
                 if iscoroutinefunction(callback):
                     asyncio.create_task(callback(event_type, data))
                 else:
@@ -148,76 +157,107 @@ class EventStream:
             except Exception:
                 self._logger.exception("Unhandled exception. Please open a bug report")
 
+    async def process_backoff(self, attempt: int) -> None:
+        """Handle backoff timer for Hubspace API
+
+        :param attempt: Number of attempts
+        """
+        backoff_time = min(attempt * self.polling_interval, 600)
+        debug_message = f"Waiting {backoff_time} seconds before next poll"
+        if attempt == 1:
+            self._logger.info("Lost connection to the Hubspace API.")
+            self._logger.debug(debug_message)
+        if self._status != EventStreamStatus.DISCONNECTED:
+            self._status = EventStreamStatus.DISCONNECTED
+            self.emit(EventType.DISCONNECTED)
+        await asyncio.sleep(backoff_time)
+
+    async def gather_data(self) -> list[dict[Any, str]]:
+        """Gather all data from the Hubspace API"""
+        consecutive_http_errors = 0
+        while True:
+            try:
+                data = await self._bridge.fetch_data()
+            except (ClientError, asyncio.TimeoutError) as err:
+                self._logger.debug(err)
+                raise err
+            except (HTTPForbidden, HTTPTooManyRequests):
+                consecutive_http_errors += 1
+                await self.process_backoff(consecutive_http_errors)
+            except Exception as err:
+                self._logger.exception(
+                    "Unknown error occurred. Please open a bug report."
+                )
+                raise err
+            else:
+                # Successful connection
+                if consecutive_http_errors > 0:
+                    self._logger.info("Reconnected to the Hubspace API")
+                    self.emit(EventType.RECONNECTED)
+                elif self._status != EventStreamStatus.CONNECTED:
+                    self._status = EventStreamStatus.CONNECTED
+                    self.emit(EventType.CONNECTED)
+                return data
+
+    async def generate_events_from_data(self, data: list[dict[Any, str]]) -> None:
+        """Process the raw Hubspace data for emitting
+
+        :param data: Raw data from Hubspace
+        """
+        processed_ids = []
+        skipped_ids = []
+        for dev in data:
+            hs_dev = get_hs_device(dev)
+            if not hs_dev.device_class:
+                continue
+            event_type = EventType.RESOURCE_UPDATED
+            if hs_dev.id not in self._bridge.tracked_devices:
+                event_type = EventType.RESOURCE_ADDED
+            self._event_queue.put_nowait(
+                HubspaceEvent(
+                    type=event_type,
+                    device_id=hs_dev.id,
+                    device=hs_dev,
+                    force_forward=False,
+                )
+            )
+            processed_ids.append(hs_dev.id)
+        # Handle devices that did not report in from the API
+        for dev_id in self._bridge.tracked_devices:
+            if dev_id not in processed_ids + skipped_ids:
+                self._event_queue.put_nowait(
+                    HubspaceEvent(type=EventType.RESOURCE_DELETED, device_id=dev_id)
+                )
+                self._bridge.remove_device(dev_id)
+
+    async def perform_poll(self) -> None:
+        """Poll Hubspace and generate the required events"""
+        try:
+            data = await self.gather_data()
+        except Exception:
+            self._status = EventStreamStatus.DISCONNECTED
+            self.emit(EventType.DISCONNECTED)
+        else:
+            try:
+                await self.generate_events_from_data(data)
+            except Exception:
+                self._logger.exception("Unable to process Hubspace data")
+
     async def __event_reader(self) -> None:
         """Poll the current states"""
         self._status = EventStreamStatus.CONNECTING
-        consecutive_http_errors = 0
         while True:
-            processed_ids = []
-            skipped_ids = []
-            try:
-                data = await self._bridge.fetch_data()
-                if consecutive_http_errors > 0:
-                    consecutive_http_errors = 0
-                    self._logger.info("Reconnected to the Hubspace API")
-                self._status = EventStreamStatus.CONNECTED
-                for dev in data:
-                    hs_dev = get_hs_device(dev)
-                    if not hs_dev.device_class:  # pragma: no cover
-                        continue
-                    event_type = EventType.RESOURCE_UPDATED
-                    if hs_dev.id not in self._bridge.tracked_devices:
-                        event_type = EventType.RESOURCE_ADDED
-                    self._event_queue.put_nowait(
-                        HubspaceEvent(
-                            type=event_type,
-                            device_id=hs_dev.id,
-                            device=hs_dev,
-                        )
-                    )
-                    processed_ids.append(hs_dev.id)
-            except (ClientError, asyncio.TimeoutError) as err:  # pragma: no cover
-                # Auto-retry will take care of the issue
-                self._logger.warning(err)
-            except (HTTPForbidden, HTTPTooManyRequests) as err:
-                consecutive_http_errors += 1
-                backoff_time = min(consecutive_http_errors * self.polling_interval, 600)
-                debug_message = (
-                    f"Waiting {backoff_time} seconds before next poll: {err}"
-                )
-                if consecutive_http_errors == 1:
-                    self._logger.info(f"Lost connection to the Hubspace API: {err}.")
-                    self._logger.debug(debug_message)
-                else:
-                    self._logger.debug(debug_message)
-                await asyncio.sleep(backoff_time)
-            except asyncio.CancelledError:  # pragma: no cover
-                self._logger.info("Shutting down event reader")
-                break
-            except Exception as err:  # pragma: no cover
-                self._logger.exception(err)
-                raise err
-            else:
-                # Connection was successful. Find missing devices
-                for dev_id in self._bridge.tracked_devices:
-                    if dev_id not in processed_ids + skipped_ids:
-                        self._event_queue.put_nowait(
-                            HubspaceEvent(
-                                type=EventType.RESOURCE_DELETED, device_id=dev_id
-                            )
-                        )
-                        self._bridge.remove_device(dev_id)
-            self._status = EventStreamStatus.DISCONNECTED
+            await self.perform_poll()
             await asyncio.sleep(self._polling_interval)
+
+    async def process_event(self):
+        try:
+            event: HubspaceEvent = await self._event_queue.get()
+            self.emit(event["type"], event)
+        except Exception:
+            self._logger.exception("Unhandled exception. Please open a bug report")
 
     async def __event_processor(self) -> None:
         """Process the hubspace devices"""
         while True:
-            try:
-                event: HubspaceEvent = await self._event_queue.get()
-                self.emit(event["type"], event)
-            except asyncio.CancelledError:
-                self._logger.info("Shutting down event processor")
-                break
-            except Exception:  # pragma: no cover
-                self._logger.exception("Unhandled exception. Please open a bug report")
+            await self.process_event()
