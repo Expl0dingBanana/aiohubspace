@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 
-from ... import device
+from ... import device, errors
 from ...device import HubspaceDevice, HubspaceState
 from ...util import process_range
 from ..models import features
@@ -72,7 +72,7 @@ class LightController(BaseResourcesController[Light]):
         effect: features.EffectFeature | None = None
         for state in hs_device.states:
             func_def = device.get_function_from_device(
-                hs_device, state.functionClass, state.functionInstance
+                hs_device.functions, state.functionClass, state.functionInstance
             )
             if state.functionClass == "power":
                 on = features.OnFeature(
@@ -181,17 +181,20 @@ class LightController(BaseResourcesController[Light]):
                     cur_item.available = state.value
                     updated_keys.add("available")
         # Several states hold the effect, but its always derived from the preset functionInstance
-        if color_seq_states:
-            preset_val = (
-                color_seq_states["preset"].value
-                if "preset" in color_seq_states
-                else None
-            )
-            if preset_val and cur_item.effect.is_preset(preset_val):
+        updated_keys = updated_keys.union(
+            await self.update_elem_color(cur_item, color_seq_states)
+        )
+        return updated_keys
+
+    async def update_elem_color(self, cur_item: Light, color_seq_states: dict) -> set:
+        updated_keys = set()
+        if color_seq_states and "preset" in color_seq_states:
+            preset_val = color_seq_states["preset"].value
+            if cur_item.effect.is_preset(preset_val):
                 if cur_item.effect.effect != preset_val:
                     cur_item.effect.effect = preset_val
                     updated_keys.add("effect")
-            elif preset_val:
+            else:
                 new_val = color_seq_states[color_seq_states["preset"].value].value
                 if cur_item.effect.effect != new_val:
                     cur_item.effect.effect = color_seq_states[
@@ -212,7 +215,11 @@ class LightController(BaseResourcesController[Light]):
     ) -> None:
         """Set supported feature(s) to fan resource."""
         update_obj = LightPut()
-        cur_item = self.get_device(device_id)
+        try:
+            cur_item = self.get_device(device_id)
+        except errors.DeviceNotFound:
+            self._logger.info("Unable to find device %s", device_id)
+            return
         if on is not None:
             update_obj.on = features.OnFeature(
                 on=on,

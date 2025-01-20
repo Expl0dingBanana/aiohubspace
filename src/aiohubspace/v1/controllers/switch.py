@@ -1,5 +1,6 @@
 """Controller holding and managing Hubspace resources of type `switch`."""
 
+from ... import errors
 from ...device import HubspaceDevice
 from ..models import features
 from ..models.resource import DeviceInformation, ResourceTypes
@@ -86,12 +87,16 @@ class SwitchController(BaseResourcesController[Switch]):
     ) -> None:
         """Set supported feature(s) to fan resource."""
         update_obj = SwitchPut()
+        try:
+            cur_item = self.get_device(device_id)
+        except errors.DeviceNotFound:
+            self._logger.info("Unable to find device %s", device_id)
+            return
         if on is not None:
-            dev = self.get_device(device_id)
             try:
                 update_obj.on = features.OnFeature(
                     on=on,
-                    func_class=dev.on[instance].func_class,
+                    func_class=cur_item.on[instance].func_class,
                     func_instance=instance,
                 )
             except KeyError:

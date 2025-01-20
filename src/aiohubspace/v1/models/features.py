@@ -113,8 +113,9 @@ class EffectFeature:
         for effect_group, effects in self.effects.items():
             if self.effect not in effects:
                 continue
-            seq_key = effect_group
-            break
+            else:
+                seq_key = effect_group
+                break
         preset_val = self.effect if self.effect in self.effects["preset"] else seq_key
         states.append(
             {
@@ -162,9 +163,10 @@ class OnFeature:
 
     @property
     def hs_value(self):
-        state = {"value": "on" if self.on else "off"}
-        if self.func_class:
-            state["functionClass"] = self.func_class
+        state = {
+            "value": "on" if self.on else "off",
+            "functionClass": self.func_class,
+        }
         if self.func_instance:
             state["functionInstance"] = self.func_instance
         return state
@@ -180,9 +182,10 @@ class OpenFeature:
 
     @property
     def hs_value(self):
-        state = {"value": "on" if self.open else "off"}
-        if self.func_class:
-            state["functionClass"] = self.func_class
+        state = {
+            "value": "on" if self.open else "off",
+            "functionClass": self.func_class,
+        }
         if self.func_instance:
             state["functionInstance"] = self.func_instance
         return state

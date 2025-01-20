@@ -96,7 +96,7 @@ class HubspaceAuth:
         async with client.get(
             HUBSPACE_OPENID_URL, params=code_params, allow_redirects=False
         ) as response:
-            logger.debug(STATUS_CODE, response.status)
+            logger.critical(STATUS_CODE, response.status)
             if response.status == 200:
                 contents = await response.text()
                 login_data = await extract_login_data(contents)
@@ -120,6 +120,8 @@ class HubspaceAuth:
             elif response.status == 302:
                 logger.debug("Hubspace returned an active session")
                 return await HubspaceAuth.parse_code(response)
+            else:
+                raise InvalidResponse("Unable to query login page")
 
     @staticmethod
     async def generate_challenge_data() -> auth_challenge:

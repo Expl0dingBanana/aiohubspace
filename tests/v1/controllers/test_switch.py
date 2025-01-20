@@ -296,3 +296,25 @@ async def test_switch_emit_update(bridge):
 async def test_set_state_empty(mocked_controller):
     await mocked_controller.initialize_elem(switch)
     await mocked_controller.set_state(switch.id)
+
+
+@pytest.mark.asyncio
+async def test_set_state_no_dev(mocked_controller, caplog):
+    caplog.set_level(0)
+    await mocked_controller.initialize_elem(transformer)
+    mocked_controller._bridge.add_device(transformer.id, mocked_controller)
+    await mocked_controller.set_state("not-a-device")
+    mocked_controller._bridge.request.assert_not_called()
+    assert "Unable to find device" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_set_state_invalid_instance(mocked_controller, caplog):
+    caplog.set_level(0)
+    await mocked_controller.initialize_elem(transformer)
+    mocked_controller._bridge.add_device(transformer.id, mocked_controller)
+    await mocked_controller.set_state(
+        transformer.id, on=True, instance="not-a-instance"
+    )
+    mocked_controller._bridge.request.assert_not_called()
+    assert "No states to send. Skipping" in caplog.text

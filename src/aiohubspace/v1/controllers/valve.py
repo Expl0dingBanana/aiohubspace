@@ -1,5 +1,6 @@
 """Controller holding and managing Hubspace resources of type `valve`."""
 
+from ... import errors
 from ...device import HubspaceDevice
 from ..models import features
 from ..models.resource import DeviceInformation, ResourceTypes
@@ -82,12 +83,16 @@ class ValveController(BaseResourcesController[Valve]):
     ) -> None:
         """Set supported feature(s) to fan resource."""
         update_obj = ValvePut()
+        try:
+            cur_item = self.get_device(device_id)
+        except errors.DeviceNotFound:
+            self._logger.info("Unable to find device %s", device_id)
+            return
         if valve_open is not None:
-            dev = self.get_device(device_id)
             try:
                 update_obj.open = features.OpenFeature(
                     open=valve_open,
-                    func_class=dev.open[instance].func_class,
+                    func_class=cur_item.open[instance].func_class,
                     func_instance=instance,
                 )
             except KeyError:

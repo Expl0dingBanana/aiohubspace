@@ -64,6 +64,6 @@ def process_range(range_vals: dict) -> list[Any]:
     else:
         for val in range(range_min, range_max, range_step):
             supported_range.append(val)
-        if range_max not in supported_range:
-            supported_range.append(range_max)
+    if range_max not in supported_range:
+        supported_range.append(range_max)
     return supported_range
