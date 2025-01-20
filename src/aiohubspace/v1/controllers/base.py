@@ -12,7 +12,7 @@ from .. import v1_const
 from ..models.resource import ResourceTypes
 from .event import EventCallBackType, EventType, HubspaceEvent
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .. import HubspaceBridgeV1
 
 
@@ -32,6 +32,7 @@ class BaseResourcesController(Generic[HubspaceResource]):
     ITEM_TYPE_ID: ResourceTypes | None = None
     ITEM_TYPES: list[ResourceTypes] | None = None
     ITEM_CLS = None
+    # functionClass map between controller -> Hubspace
     ITEM_MAPPING: dict = {}
 
     def __init__(self, bridge: "HubspaceBridgeV1") -> None:
@@ -71,8 +72,24 @@ class BaseResourcesController(Generic[HubspaceResource]):
         if evt_data is None:
             return
         item_id = evt_data.get("device_id", None)
+        cur_item = await self._handle_event_type(evt_type, item_id, evt_data)
+        if cur_item:
+            await self.emit_to_subscribers(evt_type, item_id, cur_item)
+
+    async def _handle_event_type(
+        self, evt_type: EventType, item_id: str, evt_data: HubspaceEvent
+    ) -> HubspaceResource | None:
+        """Determines what to do with the incoming event
+
+        :param evt_type: Type of event
+        :param item_id: ID of the item
+        :param evt_data: Event data
+
+        :return: Item after being processed
+        """
         if evt_type == EventType.RESOURCE_ADDED:
             cur_item = await self.initialize_elem(evt_data["device"])
+            self._items[item_id] = cur_item
             self._bridge.add_device(evt_data["device"].id, self)
         elif evt_type == EventType.RESOURCE_DELETED:
             cur_item = self._items.pop(item_id, evt_data)
@@ -82,8 +99,6 @@ class BaseResourcesController(Generic[HubspaceResource]):
             try:
                 cur_item = self.get_device(item_id)
             except DeviceNotFound:
-                cur_item = None
-            if cur_item is None:
                 return
             if not await self.update_elem(evt_data["device"]) and not evt_data.get(
                 "force_forward", False
@@ -92,6 +107,17 @@ class BaseResourcesController(Generic[HubspaceResource]):
         else:
             # Skip all other events
             return
+        return cur_item
+
+    async def emit_to_subscribers(
+        self, evt_type: EventType, item_id: str, item: HubspaceResource
+    ):
+        """Emit updates to subscribers
+
+        :param evt_type: Type of event
+        :param item_id: ID of the item
+        :param item: Item to emit to subscribers
+        """
         subscribers = (
             self._subscribers.get(item_id, []) + self._subscribers[ID_FILTER_ALL]
         )
@@ -100,18 +126,17 @@ class BaseResourcesController(Generic[HubspaceResource]):
                 continue
             # dispatch the full resource object to the callback
             if iscoroutinefunction(callback):
-                asyncio.create_task(callback(evt_type, cur_item))
+                asyncio.create_task(callback(evt_type, item))
             else:
-                callback(evt_type, cur_item)
+                callback(evt_type, item)
 
-    async def initialize(self, initial_data: list[dict]) -> None:
-        """Initialize controller by fetching all items for this resource type from bridge."""
-        if self._initialized:
-            return
-        valid_devices: list[HubspaceDevice] = []
+    async def _get_valid_devices(
+        self, initial_data: list[dict]
+    ) -> list[HubspaceDevice]:
         try:
-            valid_devices = self.get_filtered_devices(initial_data)
+            return self.get_filtered_devices(initial_data)
         except AttributeError:
+            valid_devices: list[HubspaceDevice] = []
             for element in initial_data:
                 if element["typeId"] != self.ITEM_TYPE_ID.value:
                     self._logger.debug(
@@ -129,7 +154,15 @@ class BaseResourcesController(Generic[HubspaceResource]):
                     )
                     continue
                 valid_devices.append(device)
+            return valid_devices
 
+    async def initialize(self, initial_data: list[dict]) -> None:
+        """Initialize controller by fetching all items for this resource type from bridge."""
+        if self._initialized:
+            return
+        valid_devices: list[HubspaceDevice] = await self._get_valid_devices(
+            initial_data
+        )
         for device in valid_devices:
             await self._handle_event(
                 EventType.RESOURCE_ADDED,
@@ -153,10 +186,12 @@ class BaseResourcesController(Generic[HubspaceResource]):
             )
         self._initialized = True
 
-    async def initialize_elem(self, element: HubspaceDevice) -> None:
+    async def initialize_elem(
+        self, element: HubspaceDevice
+    ) -> None:  # pragma: no cover
         raise NotImplementedError("Class should implement initialize_elem")
 
-    async def update_elem(self, element: HubspaceDevice) -> None:
+    async def update_elem(self, element: HubspaceDevice) -> None:  # pragma: no cover
         raise NotImplementedError("Class should implement update_elem")
 
     def subscribe(
@@ -200,6 +235,70 @@ class BaseResourcesController(Generic[HubspaceResource]):
 
         return unsubscribe
 
+    async def _process_state_update(
+        self, cur_item: HubspaceResource, device_id: str, states: list[dict]
+    ) -> None:
+        hs_dev_states = []
+        for state in states:
+            hs_dev_states.append(
+                HubspaceState(
+                    functionClass=state["functionClass"],
+                    value=state["value"],
+                    functionInstance=state.get("functionInstance"),
+                    lastUpdateTime=int(datetime.now(timezone.utc).timestamp() * 1000),
+                )
+            )
+        dummy_hs_update = HubspaceDevice(
+            id=device_id,
+            device_id=cur_item.device_information.parent_id,
+            model=cur_item.device_information.model,
+            device_class=cur_item.device_information.device_class,
+            default_image=cur_item.device_information.default_image,
+            default_name=cur_item.device_information.default_name,
+            friendly_name=cur_item.device_information.name,
+            states=hs_dev_states,
+        )
+        # Update now, but also trigger all chained updates
+        await self.update_elem(dummy_hs_update)
+        self._bridge.events.add_job(
+            HubspaceEvent(
+                type=EventType.RESOURCE_UPDATED,
+                device_id=device_id,
+                device=dummy_hs_update,
+                force_forward=True,
+            )
+        )
+
+    async def update_hubspace_api(self, device_id: str, states: list[dict]) -> bool:
+        """Update Hubspace API with the new states
+
+        :param device_id: Hubspace Device ID
+        :param states: States to manually set
+
+        :return: True if successful, False otherwise.
+        """
+        url = v1_const.HUBSPACE_DEVICE_STATE.format(
+            self._bridge.account_id, str(device_id)
+        )
+        headers = {
+            "host": v1_const.HUBSPACE_DATA_HOST,
+            "content-type": "application/json; charset=utf-8",
+        }
+        payload = {"metadeviceId": str(device_id), "values": states}
+        try:
+            res = await self._bridge.request("put", url, json=payload, headers=headers)
+        except ExceededMaximumRetries:
+            self._logger.warning("Maximum retries exceeded for %s", device_id)
+            return False
+        else:
+            # Bad states provided
+            if res.status == 400:
+                self._logger.warning(
+                    "Invalid update provided for %s using %s", device_id, states
+                )
+                return False
+        return True
+
     async def update(
         self,
         device_id: str,
@@ -212,13 +311,15 @@ class BaseResourcesController(Generic[HubspaceResource]):
         :param obj_in: Hubspace Resource elements to change
         :param states: States to manually set
         """
-        cur_item = self._items.get(device_id)
-        # If the update fails, restore the old states
-        fallback_required: bool = False
-        # Make a clone if the update fails
-        fallback = copy.deepcopy(cur_item)
-        if cur_item is None:
+        try:
+            cur_item = self.get_device(device_id)
+        except DeviceNotFound:
+            self._logger.info(
+                "Unable to update device %s as it does not exist", device_id
+            )
             return
+        # Make a clone to restore if the update fails
+        fallback = copy.deepcopy(cur_item)
         if obj_in:
             hs_states = dataclass_to_hs(cur_item, obj_in, self.ITEM_MAPPING)
             if not hs_states:
@@ -226,77 +327,24 @@ class BaseResourcesController(Generic[HubspaceResource]):
                 return
             # Update the state of the item to match the new states
             update_dataclass(cur_item, obj_in)
-        else:
+        else:  # Manually setting states
             hs_states = states
-            hs_dev_states = []
-            for state in states:
-                hs_dev_states.append(
-                    HubspaceState(
-                        functionClass=state["functionClass"],
-                        value=state["value"],
-                        functionInstance=state.get("functionInstance"),
-                        lastUpdateTime=int(
-                            datetime.now(timezone.utc).timestamp() * 1000
-                        ),
-                    )
-                )
-            dummy_hs_update = HubspaceDevice(
-                id=device_id,
-                device_id=cur_item.device_information.parent_id,
-                model=cur_item.device_information.model,
-                device_class=cur_item.device_information.device_class,
-                default_image=cur_item.device_information.default_image,
-                default_name=cur_item.device_information.default_name,
-                friendly_name=cur_item.device_information.name,
-                states=hs_dev_states,
-            )
-            # Update now, but also trigger all chained updates
-            await self.update_elem(dummy_hs_update)
-            self._bridge.events.add_job(
-                HubspaceEvent(
-                    type=EventType.RESOURCE_UPDATED,
-                    device_id=device_id,
-                    device=dummy_hs_update,
-                    force_forward=True,
-                )
-            )
+            await self._process_state_update(cur_item, device_id, states)
         # @TODO - Implement bluetooth logic for update
-        if True:
-            url = v1_const.HUBSPACE_DEVICE_STATE.format(
-                self._bridge.account_id, str(device_id)
-            )
-            headers = {
-                "host": v1_const.HUBSPACE_DATA_HOST,
-                "content-type": "application/json; charset=utf-8",
-            }
-            payload = {"metadeviceId": str(device_id), "values": hs_states}
-            try:
-                res = await self._bridge.request(
-                    "put", url, json=payload, headers=headers
-                )
-            except ExceededMaximumRetries:
-                fallback_required = True
-            else:
-                # Bad states provided
-                if res.status == 400:
-                    self._logger.warning(
-                        "Invalid update provided for %s using %s", device_id, hs_states
-                    )
-                    fallback_required = True
-        if fallback_required:
+        if not await self.update_hubspace_api(device_id, hs_states):
             self._items[device_id] = fallback
 
     def get_device(self, device_id) -> HubspaceResource:
-        cur_item = self._items.get(device_id)
-        if cur_item is None:
+        try:
+            return self[device_id]
+        except KeyError:
             raise DeviceNotFound(device_id)
-        return cur_item
 
 
-def update_dataclass(elem: HubspaceResource, cls: dataclass):
+def update_dataclass(elem: HubspaceResource, update_vals: dataclass):
     """Updates the element with the latest changes"""
-    for f in fields(cls):
-        cur_val = getattr(cls, f.name, None)
+    for f in fields(update_vals):
+        cur_val = getattr(update_vals, f.name, None)
         elem_val = getattr(elem, f.name)
         if cur_val is None:
             continue
@@ -324,9 +372,15 @@ def dataclass_to_hs(
         if not isinstance(new_val, list):
             new_val = [new_val]
         for val in new_val:
+            if hasattr(f, "func_instance"):
+                instance = getattr(cur_val, "func_instance", None)
+            elif hasattr(elem, "get_instance"):
+                instance = elem.get_instance(hs_key)
+            else:
+                instance = None
             new_state = {
                 "functionClass": hs_key,
-                "functionInstance": elem.get_instance(hs_key),
+                "functionInstance": instance,
                 "lastUpdateTime": int(time.time()),
                 "value": None,
             }

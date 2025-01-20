@@ -6,7 +6,7 @@ import pytest
 
 from aiohubspace.device import HubspaceState
 from aiohubspace.v1.controllers import event
-from aiohubspace.v1.controllers.valve import ValveController, features, ValvePut
+from aiohubspace.v1.controllers.valve import ValveController, features
 
 from .. import utils
 
@@ -148,12 +148,6 @@ async def test_set_state_empty(mocked_controller):
 
 
 @pytest.mark.asyncio
-async def test_set_state_empty(mocked_controller):
-    await mocked_controller.initialize_elem(valve)
-    await mocked_controller.set_state(valve.id)
-
-
-@pytest.mark.asyncio
 async def test_valve_emitting(bridge):
     dev_update = utils.create_devices_from_data("water-timer.json")[0]
     add_event = {
@@ -185,3 +179,25 @@ async def test_valve_emitting(bridge):
     await asyncio.sleep(1)
     assert len(bridge.valves._items) == 1
     assert not bridge.valves._items[dev_update.id].available
+
+
+@pytest.mark.asyncio
+async def test_set_state_no_dev(mocked_controller, caplog):
+    caplog.set_level(0)
+    await mocked_controller.initialize_elem(valve)
+    mocked_controller._bridge.add_device(valve.id, mocked_controller)
+    await mocked_controller.set_state("not-a-device")
+    mocked_controller._bridge.request.assert_not_called()
+    assert "Unable to find device" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_set_state_invalid_instance(mocked_controller, caplog):
+    caplog.set_level(0)
+    await mocked_controller.initialize_elem(valve)
+    mocked_controller._bridge.add_device(valve.id, mocked_controller)
+    await mocked_controller.set_state(
+        valve.id, valve_open=True, instance="not-a-instance"
+    )
+    mocked_controller._bridge.request.assert_not_called()
+    assert "No states to send. Skipping" in caplog.text

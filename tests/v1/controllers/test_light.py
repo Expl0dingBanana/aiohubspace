@@ -6,7 +6,13 @@ import pytest
 
 from aiohubspace.device import HubspaceState
 from aiohubspace.v1.controllers import event
-from aiohubspace.v1.controllers.light import LightController, features
+from aiohubspace.v1.controllers.light import (
+    LightController,
+    features,
+    process_color_temps,
+)
+from aiohubspace.v1.models.features import EffectFeature
+from aiohubspace.v1.models.light import Light
 
 from .. import utils
 
@@ -467,7 +473,7 @@ async def test_update_elem(mocked_controller):
         HubspaceState(
             **{
                 "functionClass": "color-temperature",
-                "value": 3000,
+                "value": "3000K",
                 "lastUpdateTime": 0,
                 "functionInstance": None,
             }
@@ -643,3 +649,99 @@ async def test_light_emitting(bridge):
     await asyncio.sleep(1)
     assert len(bridge.lights._items) == 1
     assert not bridge.lights._items[dev_update.id].available
+
+
+@pytest.mark.asyncio
+async def test_set_state_no_dev(mocked_controller, caplog):
+    caplog.set_level(0)
+    await mocked_controller.initialize_elem(a21_light)
+    mocked_controller._bridge.add_device(a21_light.id, mocked_controller)
+    await mocked_controller.set_state("not-a-device")
+    mocked_controller._bridge.request.assert_not_called()
+    assert "Unable to find device" in caplog.text
+
+
+seq_custom = {
+    "preset": HubspaceState(
+        **{
+            "functionClass": "color-sequence",
+            "value": "custom",
+            "lastUpdateTime": 0,
+            "functionInstance": "preset",
+        }
+    ),
+    "custom": HubspaceState(
+        **{
+            "functionClass": "color-sequence",
+            "value": "rainbow",
+            "lastUpdateTime": 0,
+            "functionInstance": "custom",
+        }
+    ),
+}
+
+seq_preset = {
+    "preset": HubspaceState(
+        **{
+            "functionClass": "color-sequence",
+            "value": "fade-3",
+            "lastUpdateTime": 0,
+            "functionInstance": "preset",
+        }
+    ),
+    "custom": HubspaceState(
+        **{
+            "functionClass": "color-sequence",
+            "value": "rainbow",
+            "lastUpdateTime": 0,
+            "functionInstance": "custom",
+        }
+    ),
+}
+
+light1_effects = {
+    "preset": {"fade-3"},
+    "custom": {"rainbow"},
+}
+light1 = Light(
+    [],
+    id="test-light-1",
+    available=True,
+    effect=EffectFeature(effect="getting-ready", effects=light1_effects),
+)
+light1_no_update = Light(
+    [],
+    id="test-light-1",
+    available=True,
+    effect=EffectFeature(effect="rainbow", effects=light1_effects),
+)
+light1_no_update_preset = Light(
+    [],
+    id="test-light-1",
+    available=True,
+    effect=EffectFeature(effect="fade-3", effects=light1_effects),
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "elem, color_seq_states, expected_effect, updated",
+    [
+        (light1, {}, "getting-ready", False),
+        (light1, seq_custom, "rainbow", True),
+        (light1_no_update, seq_custom, "rainbow", False),
+        (light1, seq_preset, "fade-3", True),
+        (light1_no_update_preset, seq_preset, "fade-3", False),
+    ],
+)
+async def test_update_elem_color(
+    mocked_controller, elem, color_seq_states, expected_effect, updated
+):
+    updates = await mocked_controller.update_elem_color(elem, color_seq_states)
+    assert len(updates) == int(updated)
+    assert elem.effect.effect == expected_effect
+
+
+def test_process_color_temps():
+    temps = [{"name": "2700K"}, {"name": "3000"}]
+    assert process_color_temps(temps) == [2700, 3000]

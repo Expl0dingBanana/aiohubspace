@@ -127,8 +127,16 @@ def test_PresetFeature():
 
 
 def test_SpeedFeature():
-    feat = features.SpeedFeature(speed=25, speeds=["speed-4-0", "speed-4-25", "speed-4-50", "speed-4-75", "speed-4-100",])
+    feat = features.SpeedFeature(
+        speed=25,
+        speeds=[
+            "speed-4-0",
+            "speed-4-25",
+            "speed-4-50",
+            "speed-4-75",
+            "speed-4-100",
+        ],
+    )
     assert feat.hs_value == "speed-4-25"
     feat.speed = 50
     assert feat.hs_value == "speed-4-50"
-
