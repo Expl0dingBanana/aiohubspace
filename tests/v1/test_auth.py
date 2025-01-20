@@ -87,20 +87,42 @@ async def test_extract_login_data(page_filename, err_msg, expected):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "page_filename, gc_exp, response, expected_err",
+    "page_filename, gc_exp, redirect, response, expected_err",
     [
         # Invalid status code
-        (None, None, {"status": 403}, aiohttp.ClientError),
-        # Invalid auth provided
-        (None, None, {"status": 200}, aiohttp.ClientError),
-        # @TODO - Correctly match param escaping
+        (None, None, False, {"status": 403}, auth.InvalidResponse),
         # Valid auth passed to generate_code
-        # ("auth_webapp_login.html", None, {"status": 200}, None),
+        (
+            "auth_webapp_login.html",
+            ("url_sess_code", "url_exec_code", "url_tab_id"),
+            False,
+            {"status": 200},
+            None,
+        ),
+        # Active session returned
+        (
+            "auth_webapp_login.html",
+            None,
+            True,
+            {
+                "status": 302,
+                "headers": {
+                    "location": (
+                        "hubspace-app://loginredirect"
+                        "?session_state=sess-state"
+                        "&iss=https%3A%2F%2Faccounts.hubspaceconnect.com"
+                        "%2Fauth%2Frealms%2Fthd&code=code"
+                    )
+                },
+            },
+            None,
+        ),
     ],
 )
 async def test_webapp_login(
     page_filename,
     gc_exp,
+    redirect,
     response,
     expected_err,
     hs_auth,
@@ -113,23 +135,36 @@ async def test_webapp_login(
             response["body"] = f.read()
     challenge = await hs_auth.generate_challenge_data()
     generate_code = mocker.patch.object(hs_auth, "generate_code")
+    parse_code = mocker.patch.object(auth.HubspaceAuth, "parse_code")
     params: dict[str, str] = {
         "response_type": "code",
         "client_id": auth.HUBSPACE_DEFAULT_CLIENT_ID,
-        "redirect_uri": auth.HUBSPACE_DEFAULT_REDIRECT_URI,
+        "redirect_uri": "hubspace-app%3A%2F%2Floginredirect",
         "code_challenge": challenge.challenge,
         "code_challenge_method": "S256",
         "scope": "openid offline_access",
     }
     url = await build_url(auth.HUBSPACE_OPENID_URL, params)
-    mock_aioresponse.post(url, **response)
+    mock_aioresponse.get(url, **response)
     if not expected_err:
         await hs_auth.webapp_login(challenge, aio_sess)
-        generate_code.assert_called_once_with(*gc_exp)
+        if redirect:
+            generate_code.asset_not_called()
+            parse_code.assert_called_once()
+        else:
+            exp = list(gc_exp)
+            exp.append(aio_sess)
+            generate_code.assert_called_once_with(*exp)
+            parse_code.assert_not_called()
     else:
         with pytest.raises(expected_err):
             await hs_auth.webapp_login(challenge, aio_sess)
         generate_code.assert_not_called()
+
+
+#  https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/auth?&response_type=code&scope=openid+offline_access
+#  https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/auth?response_type=code&client_id=hubspace_android&redirect_uri=hubspace-app%253A%252F%252Floginredirect&code_challenge=eu8FHk6vLCD0cU8u0RPLfusdeMNog8yzdp454Fri3SA&code_challenge_method=S256&scope=openid+offline_access
+#  https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/auth?client_id=hubspace_android&code_challenge=lR9wKAJY-ZHPsLoEaYkHIS6xuNySzz6-yAWEa8RTjJU&&code_challenge_method=S256redirect_uri=hubspace-app%3A%2F%2Floginredirect&response_type=code&scope=openid+offline_access
 
 
 @pytest.mark.asyncio

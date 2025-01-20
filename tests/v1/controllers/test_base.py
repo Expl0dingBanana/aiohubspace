@@ -8,10 +8,7 @@ from aiohubspace.device import get_hs_device
 from aiohubspace.errors import DeviceNotFound, ExceededMaximumRetries
 from aiohubspace.v1 import HubspaceBridgeV1, models, v1_const
 from aiohubspace.v1.controllers import event
-from aiohubspace.v1.controllers.base import (
-    BaseResourcesController,
-    update_dataclass,
-)
+from aiohubspace.v1.controllers.base import BaseResourcesController, update_dataclass
 from aiohubspace.v1.models.resource import DeviceInformation
 
 from .. import utils
