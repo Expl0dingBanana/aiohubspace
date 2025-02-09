@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aiohubspace"
-version = "0.7.0"
+version = "1.0.0"
 dependencies = [
   "aiohttp",
   "beautifulsoup4",
@@ -14,7 +14,8 @@ authors = [
   {name = "Chris Dohmen", email = "chris.dohmen11@gmail.com"}
 ]
 maintainers = [
-  {name = "Chris Dohmen", email = "chris.dohmen11@gmail.com"}
+  {name = "Chris Dohmen", email = "chris.dohmen11@gmail.com"},
+  {name = "tpural"}
 ]
 description = "Talk to the Hubspace API asynchronously"
 readme = "README.rst"

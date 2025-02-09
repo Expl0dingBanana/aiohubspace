@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.0.0
+=============
+
+ * Solidify API
+ * Fix an issue where the loop would break during collection
+ * Increase code coverage
+
 Version 0.7.0
 =============
 
