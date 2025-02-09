@@ -480,7 +480,7 @@ def test_HubspaceDevice(hs_device, expected):
             {
                 "id": "5a5d5e04-a6ad-47c0-b9f4-b9fe5c049ef4",
                 "device_id": "0123f95ec14bdb23",
-                "model": "TBD",
+                "model": "Keypad Deadbolt Lock",
                 "device_class": "door-lock",
                 "default_name": "Keypad Deadbolt Lock",
                 "default_image": "keypad-deadbolt-lock-icon",

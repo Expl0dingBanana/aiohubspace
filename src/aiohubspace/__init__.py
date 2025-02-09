@@ -4,6 +4,7 @@ __all__ = [
     "InvalidResponse",
     "HubspaceDevice",
     "HubspaceState",
+    "get_hs_device",
     "anonymize_device",
     "anonymize_devices",
     "v1",
@@ -25,6 +26,6 @@ finally:
 
 from . import v1
 from .anonomyize_data import anonymize_device, anonymize_devices
-from .device import HubspaceDevice, HubspaceState
+from .device import HubspaceDevice, HubspaceState, get_hs_device
 from .errors import HubspaceError, InvalidAuth, InvalidResponse
 from .types import EventType
