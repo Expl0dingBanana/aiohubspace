@@ -87,6 +87,9 @@ class HubspaceDevice:
         elif self.device_class == "glass-door":
             self.device_class = "switch"
             self.manufacturerName = "Feather River Doors"
+        # Attempt to fix anything TBD
+        if self.model == "TBD" and self.default_name:
+            self.model = self.default_name
 
 
 def get_hs_device(hs_device: dict[str, Any]) -> HubspaceDevice:
