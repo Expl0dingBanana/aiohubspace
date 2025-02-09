@@ -62,7 +62,6 @@ class LightController(BaseResourcesController[Light]):
 
     async def initialize_elem(self, hs_device: HubspaceDevice) -> Light:
         """Initialize the element"""
-        self._logger.info("Initializing %s", hs_device.id)
         available: bool = False
         on: features.OnFeature | None = None
         color_temp: features.ColorTemperatureFeature | None = None

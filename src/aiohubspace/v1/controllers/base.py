@@ -88,6 +88,7 @@ class BaseResourcesController(Generic[HubspaceResource]):
         :return: Item after being processed
         """
         if evt_type == EventType.RESOURCE_ADDED:
+            self._logger.info("Initializing %s as a %s", evt_data["device"].id, self.ITEM_CLS.__name__)
             cur_item = await self.initialize_elem(evt_data["device"])
             self._items[item_id] = cur_item
             self._bridge.add_device(evt_data["device"].id, self)
@@ -168,7 +169,7 @@ class BaseResourcesController(Generic[HubspaceResource]):
                 EventType.RESOURCE_ADDED,
                 HubspaceEvent(
                     type=EventType.RESOURCE_ADDED,
-                    device_id=device.device_id,
+                    device_id=device.id,
                     device=device,
                 ),
             )

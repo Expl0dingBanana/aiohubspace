@@ -27,7 +27,6 @@ class DeviceController(BaseResourcesController[Device]):
 
     async def initialize_elem(self, hs_device: HubspaceDevice) -> Device:
         """Initialize the element"""
-        self._logger.info("Initializing %s", hs_device.id)
         available: bool = False
         sensors: dict[str, sensor.HubspaceSensor] = {}
         binary_sensors: dict[

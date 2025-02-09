@@ -29,7 +29,6 @@ class LockController(BaseResourcesController[Lock]):
 
     async def initialize_elem(self, hs_device: HubspaceDevice) -> Lock:
         """Initialize the element"""
-        self._logger.info("Initializing %s", hs_device.id)
         available: bool = False
         current_position: features.CurrentPositionFeature | None = None
         for state in hs_device.states:

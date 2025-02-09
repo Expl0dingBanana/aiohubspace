@@ -96,7 +96,6 @@ class HubspaceAuth:
         async with client.get(
             HUBSPACE_OPENID_URL, params=code_params, allow_redirects=False
         ) as response:
-            logger.critical(STATUS_CODE, response.status)
             if response.status == 200:
                 contents = await response.text()
                 login_data = await extract_login_data(contents)
@@ -163,10 +162,9 @@ class HubspaceAuth:
             "credentialId": "",
         }
         logger.debug(
-            "URL: %s\n\tparams: %s\n\tdata: %s\n\theaders: %s",
+            "URL: %s\n\tparams: %s\n\theaders: %s",
             HUBSPACE_CODE_URL,
             params,
-            auth_data,
             headers,
         )
         async with client.post(

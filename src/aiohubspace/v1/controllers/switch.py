@@ -34,7 +34,6 @@ class SwitchController(BaseResourcesController[Switch]):
 
     async def initialize_elem(self, hs_device: HubspaceDevice) -> Switch:
         """Initialize the element"""
-        self._logger.info("Initializing %s", hs_device.id)
         available: bool = False
         on: dict[str, features.OnFeature] = {}
         for state in hs_device.states:

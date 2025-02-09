@@ -50,7 +50,6 @@ class FanController(BaseResourcesController[Fan]):
 
     async def initialize_elem(self, hs_device: HubspaceDevice) -> Fan:
         """Initialize the element"""
-        self._logger.info("Initializing %s", hs_device.id)
         available: bool = False
         on: features.OnFeature | None = None
         speed: features.SpeedFeature | None = None
