@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.0.1
+=============
+
+ * Fixed an issue where passwords could be logged to debug logs
+
 Version 1.0.0
 =============
 
