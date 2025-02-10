@@ -113,23 +113,23 @@ class HubspaceBridgeV1:
         return self._valves
 
     @property
-    def _controllers(self) -> set:
-        dev_controllers = {
+    def _controllers(self) -> list:
+        dev_controllers = [
             self._devices,
             self._fans,
             self._lights,
             self._locks,
             self._switches,
             self._valves,
-        }
+        ]
         return dev_controllers
 
     @property
-    def controllers(self) -> set:
-        initialized = set()
+    def controllers(self) -> list:
+        initialized = []
         for controller in self._controllers:
             if controller and controller.initialized:
-                initialized.add(controller)
+                initialized.append(controller)
         return initialized
 
     @property
