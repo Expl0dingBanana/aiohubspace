@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.0.2
+=============
+
+ * Fixed an issue where an updated sensor could use an incorrect value
+
 Version 1.0.1
 =============
 
