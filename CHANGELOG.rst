@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.0.3
+=============
+
+ * Fixed an issue where a new device could be generated prior to an element
+
+
 Version 1.0.2
 =============
 
