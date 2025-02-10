@@ -138,7 +138,7 @@ async def test_update_elem_sensor(mocked_controller):
     utils.modify_state(dev_update, unavail)
     rssi = utils.HubspaceState(
         functionClass="wifi-rssi",
-        value=40,
+        value="40db",
     )
     utils.modify_state(dev_update, rssi)
     updates = await mocked_controller.update_elem(dev_update)
@@ -170,7 +170,7 @@ async def test_update_elem_binary_sensor(mocked_controller):
     [
         (
             utils.HubspaceState(functionClass="doesnt_matter", value="4000K"),
-            "4000",
+            4000,
             "K",
         ),
         (
