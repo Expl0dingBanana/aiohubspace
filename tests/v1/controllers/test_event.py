@@ -131,6 +131,11 @@ def gather_data_multi_error_gen():
     yield []
 
 
+def gather_data_bad_collection():
+    yield ValueError(["bad data"])
+    yield []
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "status, response_gen, expected_messages, expected_error, expected_emits",
@@ -174,6 +179,14 @@ def gather_data_multi_error_gen():
             event.EventStreamStatus.CONNECTING,
             gather_data_multi_error_gen,
             ["Lost connection to the Hubspace API"],
+            None,
+            [event.EventType.DISCONNECTED, event.EventType.RECONNECTED],
+        ),
+        # Data comes back incorrectly from Hubspace
+        (
+            event.EventStreamStatus.CONNECTING,
+            gather_data_bad_collection,
+            ["Unexpected data from Hubspace API, ['bad data']"],
             None,
             [event.EventType.DISCONNECTED, event.EventType.RECONNECTED],
         ),
