@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.0.4
+=============
+
+ * Add additional logging around issues when querying Hubspace API
+
+
 Version 1.0.3
 =============
 
@@ -13,10 +19,12 @@ Version 1.0.2
 
  * Fixed an issue where an updated sensor could use an incorrect value
 
+
 Version 1.0.1
 =============
 
  * Fixed an issue where passwords could be logged to debug logs
+
 
 Version 1.0.0
 =============
@@ -25,10 +33,12 @@ Version 1.0.0
  * Fix an issue where the loop would break during collection
  * Increase code coverage
 
+
 Version 0.7.0
 =============
 
  * Add support for glass-doors
+
 
 Version 0.6.4
 =============
@@ -39,30 +49,36 @@ Version 0.6.4
    on the resource
  * Create additional unit tests to ensure functionality
 
+
 Version 0.6.3
 =============
 
  * Fix an issue with Binary sensors to ensure the state is obvious
+
 
 Version 0.6.2
 =============
 
  * Fix an issue with fan's preset not correctly identifying its state
 
+
 Version 0.6.1
 =============
 
  * Fix an issue with binary sensors to ensure they return True / False
+
 
 Version 0.6.0
 =============
 
  * Add the ability to send raw states to Hubspace and have the tracked device update
 
+
 Version 0.5.1
 =============
 
  * Fixed an issue where the account ID wouldnt be set during a partial initialization
+
 
 Version 0.5.0
 =============
@@ -77,16 +93,19 @@ Version 0.4.1
  * Adjusted logic for how HubspaceDevice modified models
  * Fixed an issue around Device initialization
 
+
 Version 0.4.0
 =============
 
  * Added tracking for BLE and MAC addresses
  * Added binary sensors
 
+
 Version 0.3.7
 =============
 
  * Fixed an issue around subscribers with deletion
+
 
 Version 0.3.6
 =============
@@ -94,6 +113,7 @@ Version 0.3.6
  * Fixed an issue around switches not properly subscribing to updates
  * Fixed an issue where Hubspace could return a session reauth token when preparing a new session
  * Added models for HPSA11CWB and HPDA110NWBP
+
 
 Version 0.3.0
 =============
@@ -108,10 +128,12 @@ Version 0.2
  * Added support for Binary Sensors
  * Fixed an issue where a dimmer switch could not be dimmed
 
+
 Version 0.2
 ===========
 
  * Added support for Sensors
+
 
 Version 0.1
 ===========
