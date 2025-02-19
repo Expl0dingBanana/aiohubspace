@@ -18,6 +18,7 @@ def mocked_bridge(mocker):
         side_effect=mocker.AsyncMock(return_value="mocked-account-id"),
     )
     mocker.patch.object(hs_bridge, "_account_id", "mocked-account-id")
+    mocker.patch.object(hs_bridge, "fetch_data", return_value=[])
     mocker.patch.object(hs_bridge, "request", side_effect=mocker.AsyncMock())
     mocker.patch.object(hs_bridge, "initialize", side_effect=mocker.AsyncMock())
     # Force initialization so test elements are not overwritten
@@ -44,6 +45,7 @@ def mocked_bridge_req(mocker):
     )
     mocker.patch.object(hs_bridge, "_account_id", "mocked-account-id")
     mocker.patch.object(hs_bridge, "initialize", side_effect=mocker.AsyncMock())
+    mocker.patch.object(hs_bridge, "fetch_data", side_effect=hs_bridge.fetch_data)
     mocker.patch.object(hs_bridge, "request", side_effect=hs_bridge.request)
     hs_bridge._auth._token_data = token_data(
         "mock-token", expiration=datetime.datetime.now().timestamp() + 200
@@ -67,6 +69,7 @@ def mocked_bridge_req(mocker):
 async def bridge(mocker):
     bridge = HubspaceBridgeV1("user", "passwd")
     mocker.patch.object(bridge, "_account_id", "mocked-account-id")
+    mocker.patch.object(bridge, "fetch_data", return_value=[])
     mocker.patch.object(bridge, "request", side_effect=mocker.AsyncMock())
     await bridge.initialize()
     yield bridge

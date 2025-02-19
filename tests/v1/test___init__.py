@@ -115,10 +115,27 @@ async def test_initialize():
     pass
 
 
-@pytest.mark.skip(reason="Not yet implemented")
 @pytest.mark.asyncio
-async def test_fetch_data():
-    pass
+@pytest.mark.parametrize(
+    "expected_val,error",
+    [
+        # good data
+        ([], False),
+        # bad data
+        ("i dont know", True),
+    ],
+)
+async def test_fetch_data(expected_val, error, mocked_bridge_req, mocker):
+    expected = mocker.Mock()
+    mocker.patch.object(
+        expected, "json", side_effect=mocker.AsyncMock(return_value=expected_val)
+    )
+    mocker.patch.object(mocked_bridge_req, "request", return_value=expected)
+    if not error:
+        assert await mocked_bridge_req.fetch_data() == expected_val
+    else:
+        with pytest.raises(ValueError):
+            await mocked_bridge_req.fetch_data()
 
 
 @pytest.mark.asyncio

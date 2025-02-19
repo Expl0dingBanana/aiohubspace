@@ -222,7 +222,10 @@ class HubspaceBridgeV1:
             headers=headers,
             params=params,
         )
-        return await res.json()
+        data = await res.json()
+        if not isinstance(data, list):
+            raise ValueError(data)
+        return data
 
     @asynccontextmanager
     async def create_request(

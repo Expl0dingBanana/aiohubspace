@@ -184,6 +184,12 @@ class EventStream:
             except (HTTPForbidden, HTTPTooManyRequests):
                 consecutive_http_errors += 1
                 await self.process_backoff(consecutive_http_errors)
+            except ValueError as err:
+                self._logger.warning(
+                    "Unexpected data from Hubspace API, %s.", err.args[0]
+                )
+                consecutive_http_errors += 1
+                await self.process_backoff(consecutive_http_errors)
             except Exception as err:
                 self._logger.exception(
                     "Unknown error occurred. Please open a bug report."
@@ -241,7 +247,7 @@ class EventStream:
             try:
                 await self.generate_events_from_data(data)
             except Exception:
-                self._logger.exception("Unable to process Hubspace data")
+                self._logger.exception("Unable to process Hubspace data. %s", data)
 
     async def __event_reader(self) -> None:
         """Poll the current states"""
