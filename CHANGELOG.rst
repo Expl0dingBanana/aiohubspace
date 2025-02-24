@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.1.0
+=============
+
+ * Added an event type for invalid auth during token refresh
+ * Added a check to ensure the token is valid during refresh time. If invalid,
+   the event invalid_auth is emitted.
+
 Version 1.0.4
 =============
 
