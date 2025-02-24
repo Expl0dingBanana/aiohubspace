@@ -7,6 +7,7 @@ import pytest
 from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 
+from aiohubspace import InvalidAuth
 from aiohubspace.v1.controllers import event
 from aiohubspace.v1.models.resource import ResourceTypes
 
@@ -136,6 +137,11 @@ def gather_data_bad_collection():
     yield []
 
 
+def gather_data_invalid_auth():
+    yield InvalidAuth()
+    yield []
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "status, response_gen, expected_messages, expected_error, expected_emits",
@@ -187,6 +193,14 @@ def gather_data_bad_collection():
             event.EventStreamStatus.CONNECTING,
             gather_data_bad_collection,
             ["Unexpected data from Hubspace API, ['bad data']"],
+            None,
+            [event.EventType.DISCONNECTED, event.EventType.RECONNECTED],
+        ),
+        # Invalid refresh token
+        (
+            event.EventStreamStatus.CONNECTING,
+            gather_data_invalid_auth,
+            ["Invalid credentials provided."],
             None,
             [event.EventType.DISCONNECTED, event.EventType.RECONNECTED],
         ),
@@ -498,6 +512,19 @@ async def test_emit_event_type(
         callback.assert_called_once()
     else:
         callback.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_emit_invalid_auth(bridge, mocker):
+    stream = bridge.events
+    stream._subscribers = []
+    await stream.stop()
+    callback = mocker.AsyncMock()
+    event_type = event.EventType.INVALID_AUTH
+    stream.subscribe(callback, event_filter=(event_type,))
+    event_to_emit = event.HubspaceEvent(type=event_type)
+    stream.emit(event_type, event_to_emit)
+    callback.assert_called_once()
 
 
 @pytest.mark.asyncio

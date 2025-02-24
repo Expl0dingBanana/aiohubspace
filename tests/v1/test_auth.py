@@ -284,6 +284,13 @@ async def test_generate_refresh_token(
 @pytest.mark.parametrize(
     "refresh_token,response,expected,err",
     [
+        # Refresh token invalidated due to password change
+        (
+            "code",
+            {"status": 400, "body": json.dumps({"error": "invalid_grant"})},
+            None,
+            auth.InvalidAuth,
+        ),
         # Invalid status
         ("code", {"status": 403}, None, aiohttp.ClientError),
         # bad response
