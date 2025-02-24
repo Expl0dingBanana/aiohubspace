@@ -2,6 +2,7 @@ __all__ = ["HubspaceAuth"]
 
 import asyncio
 import base64
+import contextlib
 import datetime
 import hashlib
 import logging
@@ -12,7 +13,7 @@ from typing import Final, Optional
 from urllib.parse import parse_qs, urlparse
 
 import aiohttp
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ContentTypeError
 from bs4 import BeautifulSoup
 
 from ..errors import InvalidAuth, InvalidResponse
@@ -307,8 +308,13 @@ async def generate_token(client: ClientSession, refresh_token: str) -> token_dat
     async with client.post(
         HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
     ) as response:
-        logger.debug("Status code: %s", response.status)
-        response.raise_for_status()
+        if response.status != 200:
+            with contextlib.suppress(ValueError, ContentTypeError):
+                data = await response.json()
+            if data and data.get("error") == "invalid_grant":
+                raise InvalidAuth()
+            else:
+                response.raise_for_status()
         resp_json = await response.json()
         try:
             auth_token = resp_json["id_token"]

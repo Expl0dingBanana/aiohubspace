@@ -11,6 +11,7 @@ from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 
 from ...device import HubspaceDevice, get_hs_device
+from ...errors import InvalidAuth
 from ...types import EventType
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -35,9 +36,9 @@ class HubspaceEvent(TypedDict):
     """Hubspace Event message as emitted by the EventStream."""
 
     type: EventType  # = EventType (add, update, delete)
-    device_id: str  # ID for interacting with the device
+    device_id: NotRequired[str]  # ID for interacting with the device
     device: NotRequired[HubspaceDevice]  # Hubspace Device
-    force_forward: bool
+    force_forward: NotRequired[bool]
 
 
 EventCallBackType = Callable[[EventType, dict | None], None]
@@ -161,6 +162,7 @@ class EventStream:
         """Handle backoff timer for Hubspace API
 
         :param attempt: Number of attempts
+        :param reason: Reason why the backoff is occurring
         """
         backoff_time = min(attempt * self.polling_interval, 600)
         debug_message = f"Waiting {backoff_time} seconds before next poll"
@@ -181,6 +183,10 @@ class EventStream:
             except (ClientError, asyncio.TimeoutError) as err:
                 self._logger.debug(err)
                 raise err
+            except InvalidAuth:
+                consecutive_http_errors += 1
+                self._logger.warning("Invalid credentials provided.")
+                await self.process_backoff(consecutive_http_errors)
             except (HTTPForbidden, HTTPTooManyRequests):
                 consecutive_http_errors += 1
                 await self.process_backoff(consecutive_http_errors)

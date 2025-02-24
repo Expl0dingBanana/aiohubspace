@@ -23,12 +23,12 @@ from typing import Any, Callable, Generator, Optional
 import aiohttp
 from aiohttp import web_exceptions
 
-from ..errors import DeviceNotFound, ExceededMaximumRetries
+from ..errors import DeviceNotFound, ExceededMaximumRetries, InvalidAuth
 from . import models, v1_const
 from .auth import HubspaceAuth
 from .controllers.base import BaseResourcesController, HubspaceResource
 from .controllers.device import DeviceController
-from .controllers.event import EventCallBackType, EventStream
+from .controllers.event import EventCallBackType, EventStream, EventType
 from .controllers.fan import FanController
 from .controllers.light import LightController
 from .controllers.lock import LockController
@@ -242,17 +242,22 @@ class HubspaceBridgeV1:
             )
             self._web_session = aiohttp.ClientSession(connector=connector)
 
-        token = await self._auth.token(self._web_session)
-        headers = get_headers(
-            **{
-                "authorization": f"Bearer {token}",
-            }
-        )
-        headers.update(kwargs.get("headers", {}))
-        kwargs["headers"] = headers
-        kwargs["ssl"] = True
-        async with self._web_session.request(method, url, **kwargs) as res:
-            yield res
+        try:
+            token = await self._auth.token(self._web_session)
+        except InvalidAuth:
+            self.events.emit(EventType.INVALID_AUTH)
+            raise
+        else:
+            headers = get_headers(
+                **{
+                    "authorization": f"Bearer {token}",
+                }
+            )
+            headers.update(kwargs.get("headers", {}))
+            kwargs["headers"] = headers
+            kwargs["ssl"] = True
+            async with self._web_session.request(method, url, **kwargs) as res:
+                yield res
 
     async def request(self, method: str, url: str, **kwargs) -> aiohttp.ClientResponse:
         """Make request on the api and return response data."""

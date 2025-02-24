@@ -10,3 +10,4 @@ class EventType(Enum):
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     RECONNECTED = "reconnected"
+    INVALID_AUTH = "invalid_auth"
