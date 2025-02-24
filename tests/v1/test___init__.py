@@ -1,5 +1,6 @@
 import pytest
 
+from aiohubspace import EventType, InvalidAuth
 from aiohubspace.errors import DeviceNotFound
 from aiohubspace.v1.controllers.device import DeviceController
 from aiohubspace.v1.controllers.event import EventStream
@@ -155,3 +156,14 @@ async def test_send_service_request(mocked_bridge):
         [{"functionClass": "power", "functionInstance": "light-power", "value": "off"}],
     )
     assert controller[zandra_light.id].on.on is False
+
+
+@pytest.mark.asyncio
+async def test_create_request_err(mocked_bridge, mocker):
+    mocker.patch.object(mocked_bridge._auth, "token", side_effect=InvalidAuth)
+    emit = mocker.patch.object(mocked_bridge.events, "emit")
+    with pytest.raises(InvalidAuth):
+        async with mocked_bridge.create_request("get", "https://not-called.io"):
+            pass
+
+    emit.assert_called_once_with(EventType.INVALID_AUTH)
