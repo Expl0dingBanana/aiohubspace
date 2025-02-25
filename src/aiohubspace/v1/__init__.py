@@ -222,6 +222,7 @@ class HubspaceBridgeV1:
             headers=headers,
             params=params,
         )
+        res.raise_for_status()
         data = await res.json()
         if not isinstance(data, list):
             raise ValueError(data)
