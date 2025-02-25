@@ -187,7 +187,7 @@ class EventStream:
                 consecutive_http_errors += 1
                 self._logger.warning("Invalid credentials provided.")
                 await self.process_backoff(consecutive_http_errors)
-            except (HTTPForbidden, HTTPTooManyRequests):
+            except (HTTPForbidden, HTTPTooManyRequests, ClientError):
                 consecutive_http_errors += 1
                 await self.process_backoff(consecutive_http_errors)
             except ValueError as err:
