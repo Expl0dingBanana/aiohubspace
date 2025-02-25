@@ -4,7 +4,6 @@ import logging
 from unittest.mock import AsyncMock
 
 import pytest
-from aiohttp.client_exceptions import ClientError
 from aiohttp.web_exceptions import HTTPForbidden, HTTPTooManyRequests
 
 from aiohubspace import InvalidAuth
