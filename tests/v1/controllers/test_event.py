@@ -121,6 +121,11 @@ def gather_data_happy_path():
     yield []
 
 
+def gather_data_timeout_gen():
+    yield asyncio.TimeoutError("blah blah blah")
+    yield []
+
+
 def gather_data_error_gen():
     yield HTTPForbidden()
     yield []
@@ -162,13 +167,13 @@ def gather_data_invalid_auth():
             None,
             [],
         ),
-        # Client error
+        # Timeout error
         (
             event.EventStreamStatus.CONNECTING,
+            gather_data_timeout_gen,
+            ["Timeout when contacting Hubspace API"],
             None,
-            ["blah blah blah"],
-            ClientError("blah blah blah"),
-            [],
+            [event.EventType.DISCONNECTED, event.EventType.CONNECTED],
         ),
         # Unknown error
         (event.EventStreamStatus.CONNECTING, None, ["kaboom"], KeyError("kaboom"), []),

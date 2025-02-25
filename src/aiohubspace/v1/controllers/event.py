@@ -180,9 +180,9 @@ class EventStream:
         while True:
             try:
                 data = await self._bridge.fetch_data()
-            except (ClientError, asyncio.TimeoutError) as err:
-                self._logger.debug(err)
-                raise err
+            except asyncio.TimeoutError:
+                self._logger.warning("Timeout when contacting Hubspace API.")
+                await self.process_backoff(consecutive_http_errors)
             except InvalidAuth:
                 consecutive_http_errors += 1
                 self._logger.warning("Invalid credentials provided.")
