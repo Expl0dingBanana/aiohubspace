@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.1.1
+=============
+
+ * Fix an issue where 500's could stop polling
+
 Version 1.1.0
 =============
 
