@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.1.2
+=============
+
+ * Fix an issue where water valves were showing as fans
+
 Version 1.1.1
 =============
 
