@@ -104,6 +104,8 @@ async def test_empty_update(mocked_controller):
 async def test_update_elem(mocked_controller):
     await mocked_controller.initialize_elem(valve)
     assert len(mocked_controller.items) == 1
+    dev = mocked_controller.items[0]
+    assert dev.available is True
     dev_update = utils.create_devices_from_data("water-timer.json")[0]
     new_states = [
         HubspaceState(

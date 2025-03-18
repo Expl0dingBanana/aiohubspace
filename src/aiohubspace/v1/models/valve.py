@@ -16,7 +16,7 @@ class Valve:
     instances: dict = field(default_factory=lambda: dict(), repr=False, init=False)
     device_information: DeviceInformation = field(default_factory=DeviceInformation)
 
-    type: ResourceTypes = ResourceTypes.FAN
+    type: ResourceTypes = ResourceTypes.WATER_TIMER
 
     def __init__(self, functions: list, **kwargs):
         for key, value in kwargs.items():
