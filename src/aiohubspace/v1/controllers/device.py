@@ -85,9 +85,10 @@ class DeviceController(BaseResourcesController[Device]):
         )
         return self._items[hs_device.id]
 
-    def get_filtered_devices(self, initial_data: list[dict]) -> list[dict]:
+    def get_filtered_devices(self, initial_data: list[dict]) -> list[HubspaceDevice]:
         """Find parent devices"""
         parents: dict = {}
+        potential_parents: dict = {}
         for element in initial_data:
             if element["typeId"] != self.ITEM_TYPE_ID.value:
                 self._logger.debug(
@@ -97,8 +98,18 @@ class DeviceController(BaseResourcesController[Device]):
                 )
                 continue
             device: HubspaceDevice = get_hs_device(element)
-            if device.device_id not in parents or device.children:
+            if device.children:
                 parents[device.device_id] = device
+            elif device.device_id not in parents and (
+                device.device_id not in parents
+                and device.device_id not in potential_parents
+            ):
+                potential_parents[device.device_id] = device
+            else:
+                self._logger.debug("skipping %s as its tracked", device.device_id)
+        for potential_parent in potential_parents.values():
+            if potential_parent.device_id not in parents:
+                parents[potential_parent.device_id] = potential_parent
         return list(parents.values())
 
     async def update_elem(self, hs_device: HubspaceDevice) -> set:

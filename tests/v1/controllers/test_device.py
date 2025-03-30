@@ -107,18 +107,33 @@ async def test_initialize_binary_sensors(mocked_controller):
     }
 
 
-def test_get_filtered_devices(mocked_controller):
-    data = utils.get_raw_dump("raw_hs_data.json")
+@pytest.mark.parametrize(
+    "filename, expected",
+    [
+        (
+            "raw_hs_data.json",
+            [
+                "80c0d48afc5cea1a",
+                "8ea6c4d8d54e8c6a",
+                "8993cc7b5c18f066",
+                "8ad8cc7b5c18ce2a",
+            ],
+        ),
+        (
+            "water-timer-raw.json",
+            [
+                "86114564-7acd-4542-9be9-8fd798a22b06",
+            ],
+        ),
+    ],
+)
+def test_get_filtered_devices(filename, expected, mocked_controller, caplog):
+    caplog.set_level(0)
+    data = utils.get_raw_dump(filename)
     res = mocked_controller.get_filtered_devices(data)
-    expected_devs = [
-        "b16fc78d-4639-41a7-8a10-868405c412d6",
-        "99a03fb7-ebaa-4fc2-a7b5-df223003b127",
-        "84338ebe-7ddf-4bfa-9753-3ee8cdcc8da6",
-        "4a3eeb61-17e0-472b-bef5-576d78cb06df",
-    ]
-    actual_devs = [x.id for x in res]
-    assert len(actual_devs) == len(expected_devs)
-    for key in expected_devs:
+    actual_devs = [x.device_id for x in res]
+    assert len(actual_devs) == len(expected)
+    for key in expected:
         assert key in actual_devs
 
 

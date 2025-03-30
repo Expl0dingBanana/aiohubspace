@@ -133,31 +133,31 @@ class BaseResourcesController(Generic[HubspaceResource]):
             else:
                 callback(evt_type, item)
 
+    def get_filtered_devices(self, initial_data: list[dict]) -> list[HubspaceDevice]:
+        valid_devices: list[HubspaceDevice] = []
+        for element in initial_data:
+            if element["typeId"] != self.ITEM_TYPE_ID.value:
+                self._logger.debug(
+                    "TypeID [%s] does not match %s",
+                    element["typeId"],
+                    self.ITEM_TYPE_ID.value,
+                )
+                continue
+            device = get_hs_device(element)
+            if device.device_class not in self._item_values:
+                self._logger.debug(
+                    "Device Class [%s] is not contained in %s",
+                    device.device_class,
+                    self._item_values,
+                )
+                continue
+            valid_devices.append(device)
+        return valid_devices
+
     async def _get_valid_devices(
         self, initial_data: list[dict]
     ) -> list[HubspaceDevice]:
-        try:
-            return self.get_filtered_devices(initial_data)
-        except AttributeError:
-            valid_devices: list[HubspaceDevice] = []
-            for element in initial_data:
-                if element["typeId"] != self.ITEM_TYPE_ID.value:
-                    self._logger.debug(
-                        "TypeID [%s] does not match %s",
-                        element["typeId"],
-                        self.ITEM_TYPE_ID.value,
-                    )
-                    continue
-                device = get_hs_device(element)
-                if device.device_class not in self._item_values:
-                    self._logger.debug(
-                        "Device Class [%s] is not contained in %s",
-                        device.device_class,
-                        self._item_values,
-                    )
-                    continue
-                valid_devices.append(device)
-            return valid_devices
+        return self.get_filtered_devices(initial_data)
 
     async def initialize(self, initial_data: list[dict]) -> None:
         """Initialize controller by fetching all items for this resource type from bridge."""
