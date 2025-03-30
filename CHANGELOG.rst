@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.1.3
+=============
+
+ * Fix an issue where devices could be properly identified
+
 Version 1.1.2
 =============
 
