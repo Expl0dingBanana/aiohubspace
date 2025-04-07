@@ -45,13 +45,14 @@ class HubspaceBridgeV1:
         self,
         username: str,
         password: str,
+        refresh_token: Optional[str] = None,
         session: Optional[aiohttp.ClientSession] = None,
         polling_interval: int = 30,
     ):
         self._close_session: bool = session is None
         self._web_session: aiohttp.ClientSession = session
         self._account_id: Optional[str] = None
-        self._auth = HubspaceAuth(username, password)
+        self._auth = HubspaceAuth(username, password, refresh_token=refresh_token)
         self.logger = logging.getLogger(f"{__package__}[{username}]")
         self.logger.addHandler(logging.StreamHandler())
         self._known_devs: dict[str, BaseResourcesController] = {}
@@ -149,6 +150,11 @@ class HubspaceBridgeV1:
     def account_id(self) -> str:
         """Get the account ID for the Hubspace account"""
         return self._account_id
+
+    @property
+    def refresh_token(self) -> Optional[str]:
+        """get the refresh token for the Hubspace account"""
+        return self._auth.refresh_token
 
     def set_polling_interval(self, polling_interval: int) -> None:
         self._events.polling_interval = polling_interval
