@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.2.0
+=============
+
+ * Enable auth to re-use a previously generated token
+
 Version 1.1.3
 =============
 
