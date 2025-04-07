@@ -55,11 +55,11 @@ class HubspaceAuth:
     refresh tokens.
     """
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, refresh_token: Optional[str] = None):
         self._async_lock: asyncio.Lock = asyncio.Lock()
         self._username: str = username
         self._password: str = password
-        self._refresh_token: Optional[str] = None
+        self._refresh_token: Optional[str] = refresh_token
         self._token_data: Optional[token_data] = None
 
     @property
@@ -68,6 +68,10 @@ class HubspaceAuth:
         if not self._token_data:
             return True
         return datetime.datetime.now().timestamp() >= self._token_data.expiration
+
+    @property
+    def refresh_token(self) -> Optional[str]:
+        return self._refresh_token
 
     async def webapp_login(
         self, challenge: auth_challenge, client: ClientSession
@@ -250,14 +254,26 @@ class HubspaceAuth:
         logger.debug("Successfully generated a refresh token")
         return refresh_token
 
-    async def token(self, client: ClientSession) -> str:
+    async def token(self, client: ClientSession, retry: bool = True) -> str:
+        invalidate_refresh_token = False
         async with self._async_lock:
             if not self._refresh_token:
                 self._refresh_token = await self.perform_initial_login(client)
             if await self.is_expired:
                 logger.debug("Token has not been generated or is expired")
-                self._token_data = await generate_token(client, self._refresh_token)
-                logger.debug("Token has been successfully generated")
+                try:
+                    self._token_data = await generate_token(client, self._refresh_token)
+                except InvalidAuth:
+                    logger.debug("Provided refresh token is no longer valid.")
+                    if not retry:
+                        raise
+                    self._refresh_token = None
+                    invalidate_refresh_token = True
+                else:
+                    logger.debug("Token has been successfully generated")
+        if invalidate_refresh_token:
+            self._refresh_token = None
+            return await self.token(client, retry=False)
         return self._token_data.token
 
 
