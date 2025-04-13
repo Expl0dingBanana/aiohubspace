@@ -48,11 +48,13 @@ class HubspaceBridgeV1:
         refresh_token: Optional[str] = None,
         session: Optional[aiohttp.ClientSession] = None,
         polling_interval: int = 30,
+        afero_client: Optional[str] = 'hubspace',
     ):
         self._close_session: bool = session is None
         self._web_session: aiohttp.ClientSession = session
         self._account_id: Optional[str] = None
-        self._auth = HubspaceAuth(username, password, refresh_token=refresh_token)
+        self._afero_client: str = afero_client
+        self._auth = HubspaceAuth(username, password, refresh_token=refresh_token, afero_client=afero_client)
         self.logger = logging.getLogger(f"{__package__}[{username}]")
         self.logger.addHandler(logging.StreamHandler())
         self._known_devs: dict[str, BaseResourcesController] = {}
@@ -152,6 +154,11 @@ class HubspaceBridgeV1:
         return self._account_id
 
     @property
+    def afero_client(self) -> str:
+        """Get identifier for Afero system"""
+        return self._afero_client
+
+    @property
     def refresh_token(self) -> Optional[str]:
         """get the refresh token for the Hubspace account"""
         return self._auth.refresh_token
@@ -190,9 +197,10 @@ class HubspaceBridgeV1:
         """Lookup the account ID associated with the login"""
         if not self._account_id:
             self.logger.debug("Querying API for account id")
-            headers = {"host": "api2.afero.net"}
+            headers = {"host": v1_const.AFERO_CLIENTS[self._afero_client]['API_HOST']}
+            self.logger.debug("GETURL: %s, Headers: %s",v1_const.AFERO_CLIENTS[self._afero_client]['ACCOUNT_ID_URL'],headers )
             res = await self.request(
-                "GET", v1_const.HUBSPACE_ACCOUNT_ID_URL, headers=headers
+                "GET", v1_const.AFERO_CLIENTS[self._afero_client]['ACCOUNT_ID_URL'], headers=headers
             )
             self._account_id = (
                 (await res.json())
@@ -219,12 +227,12 @@ class HubspaceBridgeV1:
         """Query the API"""
         self.logger.debug("Querying API for all data")
         headers = {
-            "host": v1_const.HUBSPACE_DATA_HOST,
+            "host": v1_const.AFERO_CLIENTS[self._afero_client]['DATA_HOST'],
         }
         params = {"expansions": "state"}
         res = await self.request(
             "get",
-            v1_const.HUBSPACE_DATA_URL.format(self.account_id),
+            v1_const.AFERO_CLIENTS[self._afero_client]['DATA_URL'].format(self.account_id),
             headers=headers,
             params=params,
         )
