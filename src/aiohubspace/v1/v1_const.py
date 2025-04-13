@@ -39,11 +39,4 @@ AFERO_CLIENTS: Final[dict[str, dict[str, str]]] = {
     },
 }
 
-DEFAULT_HEADERS: Final[dict[str, str]] = {
-    "user-agent": "Dart/3.1 (dart:io)",
-    "accept-encoding": "gzip",
-}
-#DEFAULT_HEADERS: Final[dict[str, str]] = {}
-
 MAX_RETRIES: Final[int] = 3
-

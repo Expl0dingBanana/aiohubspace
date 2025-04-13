@@ -263,7 +263,7 @@ class HubspaceBridgeV1:
             self.events.emit(EventType.INVALID_AUTH)
             raise
         else:
-            headers = get_headers(
+            headers = self.get_headers(
                 **{
                     "authorization": f"Bearer {token}",
                 }
@@ -306,8 +306,10 @@ class HubspaceBridgeV1:
             raise DeviceNotFound(f"Unable to find device {device_id}")
         await controller.update(device_id, states=states)
 
-
-def get_headers(**kwargs):
-    headers = copy.copy(v1_const.DEFAULT_HEADERS)
-    headers.update(kwargs)
-    return headers
+    def get_headers(self, **kwargs):
+        headers: dict[str, str] = {
+            "user-agent": v1_const.AFERO_CLIENTS[self._afero_client]['DEFAULT_USERAGENT'],
+            "accept-encoding": "gzip",
+        }
+        headers.update(kwargs)
+        return headers
