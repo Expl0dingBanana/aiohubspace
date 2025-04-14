@@ -15,12 +15,18 @@ AFERO_CLIENTS: Final[dict[str, dict[str, str]]] = {
         "DEFAULT_REDIRECT_URI": "hubspace-app://loginredirect",
         "OPENID_REALM": "thd",
         "OPENID_HOST": "accounts.hubspaceconnect.com",
-        "OPENID_URL": "https://accounts.hubspaceconnect.com/auth/realms/thd"
-        "/protocol/openid-connect/auth",
-        "CODE_URL": "https://accounts.hubspaceconnect.com/auth/realms/thd"
-        "/login-actions/authenticate",
-        "TOKEN_URL": "https://accounts.hubspaceconnect.com/auth/realms/thd/"
-        "protocol/openid-connect/token",
+        "OPENID_URL": (
+            "https://accounts.hubspaceconnect.com/auth/realms/thd"
+            "/protocol/openid-connect/auth"
+        ),
+        "CODE_URL": (
+            "https://accounts.hubspaceconnect.com/auth/realms/thd"
+            "/login-actions/authenticate"
+        ),
+        "TOKEN_URL": (
+            "https://accounts.hubspaceconnect.com/auth/realms/thd/"
+            "protocol/openid-connect/token"
+        ),
     },
     "myko": {
         "DEFAULT_USERAGENT": "Dart/3.1 (dart:io)",
